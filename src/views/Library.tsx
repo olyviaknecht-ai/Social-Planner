@@ -1,23 +1,34 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { addDays, format } from 'date-fns'
 import { useStore } from '../store/useStore'
 import { saveBlob } from '../store/blobs'
 import { makeThumbnail, cls } from '../lib/ui'
-import Thumbnail from '../components/Thumbnail'
-import { PillarBadge, PlatformBadge } from '../components/Badges'
+import { generateCaption } from '../engine/caption'
+import { FILTERS, groupAssets, strengthOf } from '../lib/insights'
+import type { AssetActionId } from '../lib/insights'
+import type { AssetStrength, ContentAsset } from '../types'
+import AssetCard from '../components/AssetCard'
 import AssetDrawer from '../components/AssetDrawer'
 import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
 import PeopleManager from '../components/PeopleManager'
 
+const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
+
 export default function Library() {
-  const { assets, pillars, posts, people, addAsset, removeAssets, createCarouselPost } = useStore()
+  const { assets, pillars, posts, people, campaigns, addAsset, addPost, updateAsset, updateAssets, createCarouselPost } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useState('all')
+  const [grouped, setGrouped] = useState(false)
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [peopleOpen, setPeopleOpen] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200) }
+  const campaignName = (id?: string) => campaigns.find((c) => c.id === id)?.title
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return
@@ -25,175 +36,185 @@ export default function Library() {
     for (const file of Array.from(files)) {
       const fileType = file.type.startsWith('video/') ? 'video' : 'photo'
       const thumb = await makeThumbnail(file)
-      const id = addAsset({
-        fileType,
-        title: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
-        thumbnailUrl: thumb,
-      })
+      const id = addAsset({ fileType, title: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '), thumbnailUrl: thumb })
       await saveBlob(id, file)
     }
     setBusy(false)
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const toggleSelect = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
+  const toggle = (id: string) =>
+    setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const clear = () => setSelected(new Set())
+
+  const filterDef = FILTERS.find((f) => f.id === filter) || FILTERS[0]
+  const filtered = useMemo(
+    () =>
+      assets
+        .filter((a) => filterDef.test(a, { posts }))
+        .sort((a, b) => STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt)),
+    [assets, filterDef, posts],
+  )
+
+  // ---- single-asset post creation ----
+  const createPost = (a: ContentAsset, opts: { titleSuffix?: string; platforms?: ContentAsset['selectedPlatforms']; date?: string; status?: any; open?: boolean }) => {
+    const pillar = pillars.find((p) => p.id === a.selectedPillarId)
+    const gen = generateCaption(a, pillar, { people })
+    const id = addPost({
+      title: `${a.title}${opts.titleSuffix ? ' ' + opts.titleSuffix : ''}`,
+      assetIds: [a.id],
+      pillarId: a.selectedPillarId,
+      campaignId: a.campaignId,
+      platforms: opts.platforms || (a.selectedPlatforms.length ? a.selectedPlatforms : a.suggestedPlatforms),
+      caption: gen.caption, hook: gen.hook, cta: gen.cta, hashtags: gen.hashtags,
+      status: opts.status || 'drafted',
+      scheduledDate: opts.date,
     })
+    updateAsset(a.id, { status: 'scheduled' })
+    if (opts.open) setOpenPost(id)
+    return id
+  }
 
-  const clearSelection = () => setSelected(new Set())
-
-  const deleteSelected = () => {
-    if (confirm(`Delete ${selected.size} item${selected.size > 1 ? 's' : ''}? This cannot be undone.`)) {
-      removeAssets(Array.from(selected))
-      clearSelection()
+  const onAction = (a: ContentAsset, id: AssetActionId) => {
+    switch (id) {
+      case 'reel': createPost(a, { titleSuffix: '(Reel)', platforms: ['reels', 'tiktok'], open: true }); break
+      case 'recap': createPost(a, { titleSuffix: 'recap', open: true }); break
+      case 'schedule-next-week': createPost(a, { date: format(addDays(new Date(), 7), 'yyyy-MM-dd'), status: 'scheduled' }); flash('Scheduled for next week'); break
+      case 'story-only': updateAsset(a.id, { strength: 'story' }); flash('Marked as story only'); break
+      case 'save-future': updateAsset(a.id, { tags: Array.from(new Set([...a.tags, 'future'])) }); flash('Saved for a future campaign'); break
+      case 'archive': updateAsset(a.id, { strength: 'archive', status: 'unusable' }); flash('Archived'); break
     }
   }
 
-  const makeCarousel = () => {
-    // Keep selection order stable by filtering assets in display order.
-    const ids = assets.filter((a) => selected.has(a.id)).map((a) => a.id)
-    const id = createCarouselPost(ids)
-    clearSelection()
-    setOpenPost(id)
+  // ---- batch actions ----
+  const selectedAssets = filtered.filter((a) => selected.has(a.id))
+  const ids = selectedAssets.map((a) => a.id)
+  const batchCaptions = () => {
+    selectedAssets.forEach((a) => createPost(a, {}))
+    flash(`${ids.length} captions drafted and added to the calendar`)
+    clear()
   }
-
-  const scheduledAssetIds = new Set(posts.flatMap((p) => p.assetIds))
-  const filtered = assets.filter((a) => {
-    if (filter === 'all') return true
-    if (filter === 'unscheduled') return !scheduledAssetIds.has(a.id)
-    if (filter === 'video') return a.fileType === 'video'
-    if (filter === 'time') return a.timeSensitive
-    return a.selectedPillarId === filter
-  })
+  const batchSchedule = () => {
+    selectedAssets.forEach((a, i) => createPost(a, { date: format(addDays(new Date(), 3 + i * 2), 'yyyy-MM-dd'), status: 'scheduled' }))
+    flash(`${ids.length} posts scheduled`)
+    clear()
+  }
+  const batchCarousel = () => { const id = createCarouselPost(ids); clear(); setOpenPost(id) }
 
   return (
-    <div className="p-6 pb-24">
+    <div className="p-6 pb-28">
       <PageHeader
         title="Content Library"
-        subtitle="Upload Valmer's real photos and videos. The strategist tags each one and suggests where it fits."
+        subtitle="What you have, what's strongest, and what to do with it next."
         action={
-          <button onClick={() => setPeopleOpen(true)} className="btn-outline">
-            People{people.length ? ` (${people.length})` : ''}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setGrouped((v) => !v)} className={cls('btn-outline', grouped && 'bg-valmer-slate text-white')}>
+              {grouped ? 'Grid view' : 'Group by event'}
+            </button>
+            <button onClick={() => setPeopleOpen(true)} className="btn-outline">People{people.length ? ` (${people.length})` : ''}</button>
+          </div>
         }
       />
 
       <div
-        className="mb-5 rounded-xl border-2 border-dashed border-valmer-sage/40 bg-white/60 p-8 text-center"
+        className="mb-5 rounded-xl border-2 border-dashed border-valmer-sage/40 bg-white/60 p-6 text-center"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault()
-          handleFiles(e.dataTransfer.files)
-        }}
+        onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
       >
-        <div className="font-serif text-lg text-valmer-slate">Drop photos or videos here</div>
-        <div className="mt-1 text-sm text-valmer-slate/60">team photos, event clips, testimonials, behind-the-scenes, podcast clips, graphics</div>
-        <button onClick={() => fileRef.current?.click()} className="btn-primary mt-3" disabled={busy}>
-          {busy ? 'Processing…' : 'Choose files'}
-        </button>
+        <div className="font-serif text-valmer-slate">Drop photos or videos here</div>
+        <button onClick={() => fileRef.current?.click()} className="btn-primary mt-2" disabled={busy}>{busy ? 'Processing…' : 'Choose files'}</button>
         <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       </div>
 
+      {/* filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {[
-          { id: 'all', label: 'All' },
-          { id: 'unscheduled', label: 'Unscheduled' },
-          { id: 'video', label: 'Video' },
-          { id: 'time', label: 'Time-sensitive' },
-          ...pillars.map((p) => ({ id: p.id, label: p.title })),
-        ].map((f) => (
-          <button key={f.id} onClick={() => setFilter(f.id)} className={cls('chip border', filter === f.id ? 'bg-valmer-slate text-white border-valmer-slate' : 'border-black/15 text-valmer-slate')}>
-            {f.label}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const count = f.id === 'all' ? assets.length : assets.filter((a) => f.test(a, { posts })).length
+          return (
+            <button key={f.id} onClick={() => setFilter(f.id)} className={cls('chip border', filter === f.id ? 'bg-valmer-slate text-white border-valmer-slate' : 'border-black/15 text-valmer-slate')}>
+              {f.label} <span className="opacity-50">{count}</span>
+            </button>
+          )
+        })}
         {filtered.length > 0 && (
-          <button
-            onClick={() => setSelected(new Set(filtered.map((a) => a.id)))}
-            className="ml-auto text-xs text-valmer-slate/60 underline hover:text-valmer-slate"
-          >
-            Select all
-          </button>
+          <button onClick={() => setSelected(new Set(filtered.map((a) => a.id)))} className="ml-auto text-xs text-valmer-slate/60 underline hover:text-valmer-slate">Select all</button>
         )}
       </div>
 
+      {toast && <div className="mb-3 rounded-lg bg-valmer-sage/15 px-3 py-2 text-sm text-valmer-sage">{toast}</div>}
+
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-black/5 bg-white p-12 text-center text-valmer-slate/50">
-          No content yet. Upload a few photos or videos to get started.
+        <div className="rounded-xl border border-black/5 bg-white p-12 text-center text-valmer-slate/50">No content here. Upload some, or pick a different filter.</div>
+      ) : grouped ? (
+        <div className="space-y-6">
+          {groupAssets(filtered, campaignName).map((g) => (
+            <div key={g.key}>
+              <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-black/5 pb-2">
+                <span className={cls('chip text-[10px]', g.kind === 'campaign' ? 'bg-valmer-clay/15 text-valmer-clay' : g.kind === 'event' ? 'bg-valmer-gold/20 text-valmer-gold' : 'bg-gray-100 text-gray-500')}>
+                  {g.kind === 'campaign' ? 'Campaign' : g.kind === 'event' ? 'Event' : 'Loose'}
+                </span>
+                <span className="font-serif text-valmer-ink">{g.label}</span>
+                <span className="text-xs text-valmer-slate/50">{g.assets.length} assets</span>
+                {g.assets.length >= 2 && g.kind !== 'ungrouped' && (
+                  <div className="ml-auto flex gap-2">
+                    <button onClick={() => { const id = createCarouselPost(g.assets.map((a) => a.id)); setOpenPost(id) }} className="btn-outline py-1 text-xs">Make sequence (carousel)</button>
+                    <button onClick={() => { g.assets.forEach((a) => createPost(a, {})); flash(`${g.assets.length} captions drafted`) }} className="btn-outline py-1 text-xs">Draft all captions</button>
+                  </div>
+                )}
+              </div>
+              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }} />
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((a) => {
-            const pillar = pillars.find((p) => p.id === a.selectedPillarId)
-            const scheduled = scheduledAssetIds.has(a.id)
-            const isSel = selected.has(a.id)
-            return (
-              <div
-                key={a.id}
-                className={cls('card relative overflow-hidden text-left transition-shadow hover:shadow-md', isSel && 'ring-2 ring-valmer-sage')}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleSelect(a.id)
-                  }}
-                  className={cls(
-                    'absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-md border text-xs shadow-sm transition-colors',
-                    isSel ? 'border-valmer-sage bg-valmer-sage text-white' : 'border-black/20 bg-white/90 text-transparent hover:text-valmer-slate/40',
-                  )}
-                  aria-label="Select"
-                >
-                  ✓
-                </button>
-                <button onClick={() => setOpenAsset(a.id)} className="block w-full text-left">
-                  <Thumbnail asset={a} className="aspect-[4/3] w-full" />
-                  <div className="space-y-2 p-3">
-                    <div className="truncate text-sm font-medium text-valmer-ink">{a.title}</div>
-                    <PillarBadge pillar={pillar} />
-                    <div className="flex flex-wrap gap-1">
-                      {a.selectedPlatforms.slice(0, 3).map((pl) => (
-                        <PlatformBadge key={pl} platform={pl} />
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap gap-1 text-[10px]">
-                      {a.timeSensitive && <span className="chip bg-rose-100 text-rose-700">time-sensitive</span>}
-                      {scheduled ? (
-                        <span className="chip bg-emerald-100 text-emerald-700">scheduled</span>
-                      ) : (
-                        <span className="chip bg-gray-100 text-gray-500">unscheduled</span>
-                      )}
-                      {a.status === 'unusable' && <span className="chip bg-rose-100 text-rose-700">unusable</span>}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            )
-          })}
-        </div>
+        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }} />
       )}
 
-      {/* Bulk action bar */}
+      {/* batch bar */}
       {selected.size > 0 && (
-        <div className="fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-xl">
+        <div className="fixed bottom-4 left-1/2 z-30 flex max-w-[95vw] -translate-x-1/2 flex-wrap items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-xl">
           <span className="text-sm font-medium text-valmer-ink">{selected.size} selected</span>
           <span className="h-4 w-px bg-black/10" />
-          <button onClick={makeCarousel} disabled={selected.size < 2} className="btn-primary py-1.5 text-sm disabled:opacity-40" title={selected.size < 2 ? 'Select at least 2 to group' : ''}>
-            Group into carousel
-          </button>
-          <button onClick={deleteSelected} className="btn py-1.5 text-sm text-rose-600 hover:bg-rose-50">
-            Delete
-          </button>
-          <button onClick={clearSelection} className="btn-ghost py-1.5 text-sm">
-            Clear
-          </button>
+          <select onChange={(e) => { if (e.target.value) { updateAssets(ids, { selectedPillarId: e.target.value }); flash('Pillar assigned'); e.target.value = '' } }} className="rounded-lg border border-black/10 px-2 py-1 text-xs">
+            <option value="">Assign pillar…</option>
+            {pillars.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+          </select>
+          <select onChange={(e) => { if (e.target.value) { updateAssets(ids, { campaignId: e.target.value }); flash('Campaign assigned'); e.target.value = '' } }} className="rounded-lg border border-black/10 px-2 py-1 text-xs">
+            <option value="">Assign campaign…</option>
+            {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <button onClick={batchCaptions} className="btn-primary py-1.5 text-xs">Generate captions</button>
+          <button onClick={batchCarousel} disabled={selected.size < 2} className="btn-outline py-1.5 text-xs disabled:opacity-40">Create carousel</button>
+          <button onClick={batchSchedule} className="btn-outline py-1.5 text-xs">Schedule</button>
+          <button onClick={() => { updateAssets(ids, { status: 'posted' }); flash('Marked as used'); clear() }} className="btn-outline py-1.5 text-xs">Mark used</button>
+          <button onClick={() => { updateAssets(ids, { strength: 'archive', status: 'unusable' }); flash('Archived'); clear() }} className="btn py-1.5 text-xs text-rose-600 hover:bg-rose-50">Archive</button>
+          <button onClick={clear} className="btn-ghost py-1.5 text-xs">Clear</button>
         </div>
       )}
 
       {openAsset && <AssetDrawer assetId={openAsset} onClose={() => setOpenAsset(null)} onOpenPost={(id) => { setOpenAsset(null); setOpenPost(id) }} />}
       {openPost && <PostEditor postId={openPost} onClose={() => setOpenPost(null)} />}
       {peopleOpen && <PeopleManager onClose={() => setPeopleOpen(false)} />}
+    </div>
+  )
+}
+
+function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }: any) {
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {assets.map((a: ContentAsset) => (
+        <AssetCard
+          key={a.id}
+          asset={a}
+          posts={posts}
+          pillar={pillars.find((p: any) => p.id === a.selectedPillarId)}
+          campaignLabel={campaignName(a.campaignId)}
+          selected={selected.has(a.id)}
+          onToggle={() => toggle(a.id)}
+          onOpen={() => setOpenAsset(a.id)}
+          onAction={(id: AssetActionId) => onAction(a, id)}
+        />
+      ))}
     </div>
   )
 }

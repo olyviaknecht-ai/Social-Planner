@@ -12,6 +12,8 @@ export type FileType = 'photo' | 'video'
 
 export type AssetStatus = 'unused' | 'scheduled' | 'posted' | 'unusable'
 
+export type AssetStrength = 'hero' | 'support' | 'story' | 'needs-context' | 'archive'
+
 export type PostStatus = 'idea' | 'drafted' | 'approved' | 'scheduled' | 'posted'
 
 export const POST_STATUSES: PostStatus[] = ['idea', 'drafted', 'approved', 'scheduled', 'posted']
@@ -78,6 +80,7 @@ export interface ContentAsset {
   peopleToTag: string
   captionIdea: string
   status: AssetStatus
+  strength?: AssetStrength // user override; otherwise derived from analysis
   analysis?: AssetAnalysis
 }
 

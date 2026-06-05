@@ -35,6 +35,7 @@ interface State {
 
   addAsset: (a: Partial<ContentAsset> & { fileType: ContentAsset['fileType'] }) => string
   updateAsset: (id: string, patch: Partial<ContentAsset>) => void
+  updateAssets: (ids: string[], patch: Partial<ContentAsset>) => void
   removeAsset: (id: string) => void
   removeAssets: (ids: string[]) => void
   reanalyzeAsset: (id: string) => void
@@ -121,6 +122,11 @@ export const useStore = create<State>()(
 
       updateAsset: (id, patch) =>
         set((s) => ({ assets: s.assets.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+
+      updateAssets: (ids, patch) => {
+        const idset = new Set(ids)
+        set((s) => ({ assets: s.assets.map((a) => (idset.has(a.id) ? { ...a, ...patch } : a)) }))
+      },
 
       removeAsset: (id) => {
         removeBlob(id)
