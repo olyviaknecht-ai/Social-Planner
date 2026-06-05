@@ -5,7 +5,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     id: 'people',
     title: 'People of Valmer',
     description: 'Team, faces, personality, behind-the-scenes, culture, warm human moments.',
-    color: '#c0714f',
+    color: '#ec4899',
     goal: 'Create emotional connection and familiarity.',
     active: true,
     targetShare: 0.22,
@@ -15,7 +15,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Agent Growth + Support',
     description:
       'Marketing help, events, tools, resources, Valmer Insider, Agent Advantage, content support, Title Toolbox, headshots, workshops.',
-    color: '#5b7c6f',
+    color: '#8b5cf6',
     goal: 'Show that Valmer helps agents grow their business, not just close transactions.',
     active: true,
     targetShare: 0.2,
@@ -25,7 +25,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Events + Experiences',
     description:
       'Agent Advantage, Marketing Power Hour, CE, content days, headshots, partner events, Good Talk Club, office events.',
-    color: '#c79a4b',
+    color: '#f59e0b',
     goal: 'Increase registrations and make events feel worth attending.',
     active: true,
     targetShare: 0.18,
@@ -35,7 +35,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Proof + Social Trust',
     description:
       'Testimonials, agent feedback, event turnout, recap videos, client/agent wins, quotes, milestones, results.',
-    color: '#7a6cae',
+    color: '#6366f1',
     goal: 'Build credibility so agents feel “people like me trust Valmer.”',
     active: true,
     targetShare: 0.15,
@@ -45,7 +45,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Community + Local Presence',
     description:
       'Events, partnerships, RMHC, local businesses, Real Producers, YPN, community involvement, office openings, charity work.',
-    color: '#4a8db5',
+    color: '#06b6d4',
     goal: 'Show Valmer as connected, local, and invested in the community.',
     active: true,
     targetShare: 0.12,
@@ -55,7 +55,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Modern Tools + Innovation',
     description:
       'Valmer Insider, Agent OS, Closinglock, Title Toolbox, marketing request systems, AI/social tools, modern communication.',
-    color: '#3f7d7a',
+    color: '#14b8a6',
     goal: 'Position Valmer as forward-thinking and different from other title companies.',
     active: true,
     targetShare: 0.08,
@@ -65,7 +65,7 @@ export const SEED_PILLARS: ContentPillar[] = [
     title: 'Closing Confidence',
     description:
       'Client experience, communication, smooth closings, wire safety reminders, behind the scenes, closing day moments.',
-    color: '#9c5d6b',
+    color: '#f43f5e',
     goal: 'Reinforce trust and professionalism without being boring.',
     active: true,
     targetShare: 0.05,

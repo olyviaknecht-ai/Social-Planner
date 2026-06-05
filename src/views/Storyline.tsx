@@ -6,7 +6,7 @@ import PageHeader from '../components/PageHeader'
 import { PillarBadge } from '../components/Badges'
 import { cls } from '../lib/ui'
 
-const PHASE_COLORS = ['#c0714f', '#9c5d6b', '#5b7c6f', '#c79a4b']
+const PHASE_COLORS = ['#ec4899', '#a855f7', '#6366f1', '#06b6d4']
 
 export default function Storyline() {
   const { weeks, posts, pillars, updateWeek } = useStore()

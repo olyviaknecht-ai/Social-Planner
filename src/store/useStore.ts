@@ -404,9 +404,20 @@ export const useStore = create<State>()(
       // defaults instead of being dropped by the default shallow merge.
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<State>
+        // Refresh default pillar colors to the new palette, but only where the user
+        // hasn't customized them (i.e. the stored color is the old default).
+        const OLD: Record<string, string> = {
+          people: '#c0714f', growth: '#5b7c6f', events: '#c79a4b', proof: '#7a6cae',
+          community: '#4a8db5', tools: '#3f7d7a', closing: '#9c5d6b',
+        }
+        const pillars = (p.pillars || current.pillars).map((pl) => {
+          const fresh = SEED_PILLARS.find((s) => s.id === pl.id)
+          return fresh && OLD[pl.id] === pl.color ? { ...pl, color: fresh.color } : pl
+        })
         return {
           ...current,
           ...p,
+          pillars,
           aiConfig: { ...current.aiConfig, ...(p.aiConfig || {}) },
           metaConfig: { ...current.metaConfig, ...(p.metaConfig || {}) },
         }

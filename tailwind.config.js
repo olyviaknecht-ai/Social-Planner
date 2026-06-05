@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         valmer: {
-          ink: '#1c2733',
-          slate: '#2f3e4d',
-          sage: '#5b7c6f',
-          sand: '#e8e2d6',
-          clay: '#c0714f',
-          gold: '#c79a4b',
-          mist: '#f5f3ee',
+          ink: '#181225', // deep plum-black for text
+          slate: '#544f6b', // muted violet-grey for secondary text
+          sage: '#14b8a6', // teal accent (selected, success, focus)
+          sand: '#efe9fb', // light lavender placeholder
+          clay: '#ec4899', // pink — primary accent
+          gold: '#8b5cf6', // violet — secondary accent
+          mist: '#faf7ff', // light cool panel/modal background
         },
       },
       fontFamily: {

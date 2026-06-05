@@ -36,10 +36,10 @@ export default function App() {
 
   return (
     <div className="flex h-full">
-      <aside className="w-64 shrink-0 flex flex-col text-white" style={{ background: 'linear-gradient(185deg, #20303f 0%, #1c2733 55%, #161f29 100%)' }}>
-        <div className="px-5 pt-6 pb-5 border-b border-white/10">
+      <aside className="w-64 shrink-0 flex flex-col text-white" style={{ background: 'linear-gradient(165deg, #6366f1 0%, #a855f7 45%, #ec4899 100%)' }}>
+        <div className="px-5 pt-6 pb-5 border-b border-white/15">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-valmer-clay font-serif text-sm font-semibold">V</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 font-serif text-sm font-semibold backdrop-blur">V</span>
             <div>
               <div className="font-serif text-lg leading-none">Valmer</div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Content Storyboard</div>
@@ -58,7 +58,7 @@ export default function App() {
             >
               {({ isActive }) => (
                 <>
-                  {isActive && <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-valmer-clay" />}
+                  {isActive && <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-white" />}
                   <span className={cls('text-base transition-transform', isActive ? 'opacity-100' : 'opacity-70')}>{n.icon}</span>
                   {n.label}
                 </>
@@ -81,7 +81,7 @@ export default function App() {
               />
             </div>
           </div>
-          <button onClick={generatePlan} className="btn w-full text-white shadow-md" style={{ background: 'linear-gradient(180deg, #cc7b54 0%, #c0714f 100%)' }}>
+          <button onClick={generatePlan} className="btn w-full bg-white font-semibold text-valmer-ink shadow-md hover:bg-white/90">
             Generate 90-day plan
           </button>
           <button

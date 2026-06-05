@@ -14,9 +14,9 @@ body,
 
 body {
   margin: 0;
-  background: linear-gradient(160deg, #f7f5f0 0%, #efe9df 100%);
+  background: linear-gradient(155deg, #fdf2ff 0%, #f4f0ff 48%, #eef4ff 100%);
   background-attachment: fixed;
-  color: #1c2733;
+  color: #181225;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -33,11 +33,11 @@ body {
   }
   .btn-primary {
     @apply btn text-white;
-    background: linear-gradient(180deg, #3a4a5a 0%, #2f3e4d 100%);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 6px 16px -8px rgba(47, 62, 77, 0.6);
+    background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 8px 20px -8px rgba(236, 72, 153, 0.55);
   }
   .btn-primary:hover {
-    background: linear-gradient(180deg, #2f3e4d 0%, #1c2733 100%);
+    background: linear-gradient(135deg, #db2777 0%, #9333ea 100%);
   }
   .btn-ghost {
     @apply btn bg-transparent text-valmer-slate hover:bg-black/[0.05];
