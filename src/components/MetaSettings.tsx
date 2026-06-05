@@ -24,7 +24,7 @@ export default function MetaSettings({ onClose }: { onClose: () => void }) {
     setResult(null)
     setDebug(null)
     try {
-      const { pageId, pageToken, pageName } = await connectFacebook(metaConfig.appId, metaConfig.pageId, setDebug)
+      const { pageId, pageToken, pageName } = await connectFacebook(metaConfig.appId, metaConfig.pageId, setDebug, metaConfig.configId)
       setMetaConfig({ pageId, pageToken, pageName })
       setResult({ ok: true, message: `Connected to “${pageName}”. You can publish now.` })
     } catch (e: any) {
@@ -73,6 +73,14 @@ export default function MetaSettings({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
+            <label className="label">Login Configuration ID <span className="font-normal normal-case text-valmer-slate/50">— only if you set up “Facebook Login for Business”</span></label>
+            <input value={metaConfig.configId} onChange={(e) => setMetaConfig({ configId: e.target.value })} placeholder="leave blank for classic Facebook Login" className="input font-mono text-sm" />
+            <p className="mt-1 text-[11px] text-valmer-slate/55">
+              If you got an “Invalid Scopes” error, your app is using Facebook Login for Business. Create a login configuration in the app (with the Page permissions) and paste its ID here. Leave blank if you used classic Facebook Login.
+            </p>
+          </div>
+
+          <div>
             <label className="label">Facebook Page ID</label>
             <input value={metaConfig.pageId} onChange={(e) => setMetaConfig({ pageId: e.target.value })} placeholder="e.g. 1029384756" className="input" />
             <p className="mt-1 text-[11px] text-valmer-slate/55">Leave blank to use your first Page, or enter the specific Page ID you want to post to.</p>
@@ -99,14 +107,18 @@ export default function MetaSettings({ onClose }: { onClose: () => void }) {
           )}
 
           <details className="rounded-lg bg-white p-3 text-xs text-valmer-slate/80">
-            <summary className="cursor-pointer font-medium text-valmer-slate">Set up the App ID (one time)</summary>
-            <ol className="mt-2 list-decimal space-y-1 pl-4">
-              <li>Go to developers.facebook.com → Create App → type <b>Business</b>.</li>
-              <li>Add the <b>Facebook Login for Business</b> (or Facebook Login) product.</li>
-              <li>This app uses the <b>JavaScript SDK</b>, so the key setting is the allowed domain, not a redirect URI. In Facebook Login → Settings: turn <b>“Login with the JavaScript SDK”</b> = Yes, and add <code>http://localhost:5174/</code> under <b>Allowed Domains for the JavaScript SDK</b>.</li>
-              <li>Under App Settings → Basic, add <code>localhost</code> to <b>App Domains</b>.</li>
-              <li>Copy the <b>App ID</b> from the dashboard and paste it above.</li>
-              <li>While the app is in <b>Development</b> mode, only people with an <b>Admin / Developer / Tester</b> role on the app can log in. Add yourself under App Roles. (Live posting to other users needs Meta's App Review.)</li>
+            <summary className="cursor-pointer font-medium text-valmer-slate">Set up the App ID (one time) — and the “Invalid Scopes” fix</summary>
+            <ol className="mt-2 list-decimal space-y-1.5 pl-4">
+              <li>developers.facebook.com → Create App → type <b>Business</b> (Page posting needs a Business app).</li>
+              <li><b>Pick the right login product — this is what causes “Invalid Scopes”:</b>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  <li><b>Classic “Facebook Login”</b> (recommended here): permissions are passed as scopes, which is what this app does by default. Leave the Configuration ID field blank.</li>
+                  <li><b>“Facebook Login for Business”</b>: it ignores scopes (hence the error). Go to the product → <b>Configurations</b> → create one that includes <code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>pages_manage_posts</code>, then copy its <b>Configuration ID</b> into the field above.</li>
+                </ul>
+              </li>
+              <li>In Facebook Login → Settings: <b>Login with the JavaScript SDK = Yes</b>, and add your site URL under <b>Allowed Domains for the JavaScript SDK</b> (your live URL, or <code>http://localhost:5174/</code> for local).</li>
+              <li>App Settings → Basic: add your domain to <b>App Domains</b>.</li>
+              <li>Add yourself under <b>App Roles</b> as Admin/Developer/Tester. In Development mode only those roles can log in, and the “only shown to developers” warning is normal — click through and approve the Page permissions.</li>
             </ol>
           </details>
 

@@ -81,6 +81,7 @@ export async function connectFacebook(
   appId: string,
   wantedPageId: string | undefined,
   onDebug?: (d: FbDebug) => void,
+  configId?: string,
 ): Promise<{ pageId: string; pageToken: string; pageName: string }> {
   if (!appId.trim()) throw new Error('Enter your Meta App ID first.')
   if (!window.FB) throw new Error('Facebook SDK is still loading. Wait a second, then click Connect again.')
@@ -90,25 +91,30 @@ export async function connectFacebook(
     initedAppId = appId.trim()
   }
 
+  // "Facebook Login for Business" uses a configuration ID and rejects raw scopes;
+  // classic "Facebook Login" uses scopes. Pick the right one based on what's set.
+  const useConfig = !!configId?.trim()
+  const loginOpts: Record<string, unknown> = useConfig
+    ? { config_id: configId!.trim(), response_type: 'token', auth_type: 'rerequest', return_scopes: true }
+    : { scope: REQUIRED_SCOPES.join(','), return_scopes: true, auth_type: 'rerequest' }
+
   // No await before this — FB.login must run in the same tick as the click.
   const loginRes = await new Promise<any>((resolve) => {
-    window.FB.login((res: any) => resolve(res), {
-      scope: REQUIRED_SCOPES.join(','),
-      return_scopes: true, // so we can read which scopes were granted vs declined
-      auth_type: 'rerequest', // re-prompt for permissions the user declined before
-    })
+    window.FB.login((res: any) => resolve(res), loginOpts)
   })
 
   const granted = String(loginRes?.authResponse?.grantedScopes || '').split(',').filter(Boolean)
   const declined = REQUIRED_SCOPES.filter((s) => !granted.includes(s))
   // eslint-disable-next-line no-console
-  console.log('[Meta] FB.login response:', loginRes, '| granted:', granted, '| declined:', declined)
+  console.log('[Meta] FB.login response:', loginRes, '| mode:', useConfig ? 'config_id' : 'scopes', '| granted:', granted, '| declined:', declined)
   onDebug?.({ status: loginRes?.status, granted, declined, raw: loginRes })
 
   if (loginRes?.status !== 'connected' || !loginRes.authResponse) {
     throw new Error(`Login did not complete (status: ${loginRes?.status || 'unknown'}). ${describeStatus(loginRes)}`)
   }
-  if (declined.length) {
+  // With a Business Login config, granted scopes aren't always reported; trust the
+  // token and let the /me/accounts call below be the real check.
+  if (!useConfig && declined.length) {
     throw new Error(`Login succeeded but these permissions were not granted: ${declined.join(', ')}. Click Connect again and approve all of them.`)
   }
 

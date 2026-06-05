@@ -77,7 +77,7 @@ export const useStore = create<State>()(
       weeks: buildStoryline(),
       people: [],
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
-      metaConfig: { appId: '', pageId: '', pageToken: '', pageName: '', igUserId: '' },
+      metaConfig: { appId: '', configId: '', pageId: '', pageToken: '', pageName: '', igUserId: '' },
 
       setAIConfig: (patch) => set((s) => ({ aiConfig: { ...s.aiConfig, ...patch } })),
       setMetaConfig: (patch) => set((s) => ({ metaConfig: { ...s.metaConfig, ...patch } })),

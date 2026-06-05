@@ -155,6 +155,7 @@ export interface AIConfig {
 // Settings for publishing to Meta (Facebook Page via Graph API).
 export interface MetaConfig {
   appId: string // public Meta App ID, used for Facebook Login
+  configId: string // optional: "Facebook Login for Business" configuration ID (uses this instead of scopes)
   pageId: string
   pageToken: string // auto-filled by Facebook Login, or pasted manually (advanced)
   pageName: string
