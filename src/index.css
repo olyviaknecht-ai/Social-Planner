@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f5f3ee;
+  color: #1c2733;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-black/5 shadow-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-valmer-slate text-white hover:bg-valmer-ink;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-valmer-slate hover:bg-black/5;
+  }
+  .btn-outline {
+    @apply btn border border-black/10 bg-white text-valmer-slate hover:bg-black/5;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .input {
+    @apply w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-valmer-sage focus:ring-2 focus:ring-valmer-sage/20;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-valmer-slate/70 mb-1;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
