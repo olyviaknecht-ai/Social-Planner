@@ -14,36 +14,63 @@ body,
 
 body {
   margin: 0;
-  background: #f5f3ee;
+  background: linear-gradient(160deg, #f7f5f0 0%, #efe9df 100%);
+  background-attachment: fixed;
   color: #1c2733;
   -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl border border-black/5 shadow-sm;
+    @apply bg-white rounded-2xl border border-black/[0.05] transition-all duration-200;
+    box-shadow: 0 1px 2px rgba(28, 39, 51, 0.04), 0 6px 20px -12px rgba(28, 39, 51, 0.18);
+  }
+  .card:hover {
+    box-shadow: 0 1px 2px rgba(28, 39, 51, 0.05), 0 14px 34px -16px rgba(28, 39, 51, 0.28);
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
   }
   .btn-primary {
-    @apply btn bg-valmer-slate text-white hover:bg-valmer-ink;
+    @apply btn text-white;
+    background: linear-gradient(180deg, #3a4a5a 0%, #2f3e4d 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 6px 16px -8px rgba(47, 62, 77, 0.6);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(180deg, #2f3e4d 0%, #1c2733 100%);
   }
   .btn-ghost {
-    @apply btn bg-transparent text-valmer-slate hover:bg-black/5;
+    @apply btn bg-transparent text-valmer-slate hover:bg-black/[0.05];
   }
   .btn-outline {
-    @apply btn border border-black/10 bg-white text-valmer-slate hover:bg-black/5;
+    @apply btn border border-black/10 bg-white/80 text-valmer-slate hover:bg-white hover:border-black/20;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .input {
-    @apply w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-valmer-sage focus:ring-2 focus:ring-valmer-sage/20;
+    @apply w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none transition-shadow focus:border-valmer-sage focus:ring-2 focus:ring-valmer-sage/25;
   }
   .label {
     @apply block text-xs font-semibold uppercase tracking-wide text-valmer-slate/70 mb-1;
   }
+  .nav-link {
+    @apply relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-150;
+  }
+}
+
+@keyframes fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeup {
+  animation: fadeup 0.25s ease-out both;
 }
 
 ::-webkit-scrollbar {
@@ -51,6 +78,9 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(28, 39, 51, 0.18);
   border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 39, 51, 0.3);
 }

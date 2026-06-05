@@ -31,12 +31,21 @@ export default function App() {
   const aiOn = aiReady(aiConfig)
   const metaOn = metaReady(metaConfig)
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
   return (
     <div className="flex h-full">
-      <aside className="w-64 shrink-0 bg-valmer-ink text-white flex flex-col">
-        <div className="px-5 py-6 border-b border-white/10">
-          <div className="font-serif text-xl leading-tight">Valmer</div>
-          <div className="text-xs uppercase tracking-[0.2em] text-white/50">Content Storyboard</div>
+      <aside className="w-64 shrink-0 flex flex-col text-white" style={{ background: 'linear-gradient(185deg, #20303f 0%, #1c2733 55%, #161f29 100%)' }}>
+        <div className="px-5 pt-6 pb-5 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-valmer-clay font-serif text-sm font-semibold">V</span>
+            <div>
+              <div className="font-serif text-lg leading-none">Valmer</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Content Storyboard</div>
+            </div>
+          </div>
+          <div className="mt-4 text-sm text-white/60">{greeting}, <span className="text-white/90">Olyvia</span></div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map((n) => (
@@ -44,30 +53,35 @@ export default function App() {
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
-                cls(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                  isActive ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white',
-                )
+                cls('nav-link', isActive ? 'bg-white/15 text-white shadow-sm' : 'text-white/65 hover:bg-white/10 hover:text-white')
               }
             >
-              <span className="text-base opacity-80">{n.icon}</span>
-              {n.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-valmer-clay" />}
+                  <span className={cls('text-base transition-transform', isActive ? 'opacity-100' : 'opacity-70')}>{n.icon}</span>
+                  {n.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
         <div className="px-4 py-4 border-t border-white/10 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">Strategy score</span>
-            <span
-              className={cls(
-                'font-semibold tabular-nums',
-                strategy.score >= 80 ? 'text-emerald-300' : strategy.score >= 60 ? 'text-amber-300' : 'text-rose-300',
-              )}
-            >
-              {strategy.score}
-            </span>
+          <div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white/60">Strategy score</span>
+              <span className={cls('font-semibold tabular-nums', strategy.score >= 80 ? 'text-emerald-300' : strategy.score >= 60 ? 'text-amber-300' : 'text-rose-300')}>
+                {strategy.score}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className={cls('h-full rounded-full transition-all duration-500', strategy.score >= 80 ? 'bg-emerald-400' : strategy.score >= 60 ? 'bg-amber-400' : 'bg-rose-400')}
+                style={{ width: `${strategy.score}%` }}
+              />
+            </div>
           </div>
-          <button onClick={generatePlan} className="btn w-full bg-valmer-clay text-white hover:bg-valmer-clay/90">
+          <button onClick={generatePlan} className="btn w-full text-white shadow-md" style={{ background: 'linear-gradient(180deg, #cc7b54 0%, #c0714f 100%)' }}>
             Generate 90-day plan
           </button>
           <button

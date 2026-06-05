@@ -7,6 +7,10 @@ import type {
   StorylineWeek,
 } from '../types'
 import { generateCaption } from './caption'
+import { strengthOf } from '../lib/insights'
+
+// Strongest assets get picked first; weaker ones stay as options in the library.
+const STRENGTH_PRIORITY: Record<string, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 9 }
 
 export const PHASES = [
   { phase: 1, name: 'Familiarity', weeks: [0, 1, 2], goal: 'Remind agents who Valmer is — faces, warmth, culture, local connection.' },
@@ -57,13 +61,13 @@ function pickAsset(
   assets: ContentAsset[],
   used: Set<string>,
 ): ContentAsset | undefined {
-  const candidates = assets.filter(
-    (a) => a.status !== 'unusable' && !used.has(a.id),
-  )
+  // Treat uploads as a pool of options: skip archived/story-only, and prefer the
+  // strongest assets so we don't dump everything into the plan.
+  const candidates = assets
+    .filter((a) => a.status !== 'unusable' && !used.has(a.id) && !['archive', 'story'].includes(strengthOf(a)))
+    .sort((a, b) => (STRENGTH_PRIORITY[strengthOf(a)] ?? 5) - (STRENGTH_PRIORITY[strengthOf(b)] ?? 5))
   for (const pid of recommended) {
-    const match = candidates.find(
-      (a) => (a.selectedPillarId || a.suggestedPillars[0]) === pid,
-    )
+    const match = candidates.find((a) => (a.selectedPillarId || a.suggestedPillars[0]) === pid)
     if (match) return match
   }
   return candidates[0]

@@ -9,6 +9,7 @@ import type { CaptionResult } from '../engine/ai'
 import { metaReady, publishFacebookPhoto, publishFacebookText } from '../engine/meta'
 import { cls } from '../lib/ui'
 import Thumbnail from './Thumbnail'
+import Lightbox from './Lightbox'
 
 export default function PostEditor({ postId, onClose }: { postId: string; onClose: () => void }) {
   const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
@@ -20,6 +21,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
   const [aiErr, setAiErr] = useState<string | null>(null)
   const [pubBusy, setPubBusy] = useState(false)
   const [pubMsg, setPubMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [lightbox, setLightbox] = useState<string | null>(null)
   if (!post) return null
 
   const postAssets = assets.filter((a) => post.assetIds.includes(a.id))
@@ -137,6 +139,14 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
         </div>
 
         <div className="space-y-5 p-5">
+          {/* big image preview */}
+          {primaryAsset && (
+            <button onClick={() => setLightbox(primaryAsset.id)} className="group relative block w-full overflow-hidden rounded-xl" title="Click to enlarge">
+              <Thumbnail asset={primaryAsset} className="aspect-[16/10] w-full" />
+              <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">Click to enlarge</span>
+            </button>
+          )}
+
           {/* meta row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -203,7 +213,9 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
             <div className="mt-1 flex flex-wrap items-center gap-2">
               {postAssets.map((a) => (
                 <div key={a.id} className="relative">
-                  <Thumbnail asset={a} className="h-16 w-16 rounded-lg" />
+                  <button onClick={() => setLightbox(a.id)} title="Click to enlarge">
+                    <Thumbnail asset={a} className="h-16 w-16 rounded-lg" />
+                  </button>
                   <button
                     onClick={() => set({ assetIds: post.assetIds.filter((x) => x !== a.id) })}
                     className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-white text-xs shadow"
@@ -376,6 +388,11 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
           </div>
         </div>
       </div>
+
+      {lightbox && (() => {
+        const a = assets.find((x) => x.id === lightbox)
+        return a ? <Lightbox asset={a} onClose={() => setLightbox(null)} /> : null
+      })()}
     </div>
   )
 }

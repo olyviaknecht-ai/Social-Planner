@@ -223,7 +223,7 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate }: { post: Schedule
       className={cls('rounded-md border border-black/5 bg-white shadow-sm', isDragging && 'opacity-30')}
       style={{ borderLeft: `3px solid ${pillar?.color || '#cbd5e1'}` }}
     >
-      <div {...attributes} {...listeners} className="cursor-grab p-1.5 active:cursor-grabbing">
+      <div {...attributes} {...listeners} onClick={onOpen} className="cursor-pointer p-1.5 active:cursor-grabbing" title="Click to view details">
         <div className="flex gap-1.5">
           {asset && <Thumbnail asset={asset} className="h-8 w-8 shrink-0 rounded" />}
           <div className="min-w-0 flex-1">
