@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { aiBuildBrand, aiReady } from '../engine/ai'
 import type { BrandAnswers } from '../engine/ai'
+import { buildBrandLocally } from '../engine/brand'
 import type { ContentPillar } from '../types'
 
 const COLORS = ['#ec4899', '#8b5cf6', '#f59e0b', '#6366f1', '#06b6d4', '#14b8a6', '#f43f5e']
@@ -45,16 +46,27 @@ export default function BrandOnboarding({ onClose, onOpenAI }: { onClose: () => 
   const ready = aiReady(aiConfig)
   const set = (k: keyof BrandAnswers, v: string) => setA((p) => ({ ...p, [k]: v }))
 
-  const build = async () => {
+  const answers = () => ({ ...a, name: active?.name || a.name })
+
+  // Built-in (no AI): instant, works without a key.
+  const build = () => {
+    const res = buildBrandLocally(answers())
+    setPillars(toPillars(res.pillars))
+    updateBrand(activeBrandId, { brief: res.brief })
+    onClose()
+  }
+
+  // Optional: use ChatGPT if the connection is working.
+  const buildWithAI = async () => {
     setBusy(true)
     setErr(null)
     try {
-      const res = await aiBuildBrand(aiConfig, { ...a, name: active?.name || a.name })
+      const res = await aiBuildBrand(aiConfig, answers())
       setPillars(toPillars(res.pillars))
       updateBrand(activeBrandId, { brief: res.brief })
       onClose()
     } catch (e: any) {
-      setErr(e?.message || 'Could not build the brand. Try again.')
+      setErr(e?.message || 'ChatGPT could not build it. Use the built-in option instead.')
     } finally {
       setBusy(false)
     }
@@ -83,19 +95,24 @@ export default function BrandOnboarding({ onClose, onOpenAI }: { onClose: () => 
 
           {err && <div className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
 
-          {!ready && (
-            <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Turn on the AI caption writer to use ChatGPT for this.{' '}
-              <button onClick={onOpenAI} className="font-semibold underline">Open AI settings</button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <button onClick={useStarter} className="btn-ghost text-sm">Skip, use starter pillars</button>
-            <button onClick={build} disabled={busy || !ready || !a.about.trim()} className="btn-primary">
-              {busy ? 'Building…' : 'Build my brand with ChatGPT'}
-            </button>
+            <div className="flex gap-2">
+              {ready && (
+                <button onClick={buildWithAI} disabled={busy || !a.about.trim()} className="btn-outline text-sm">
+                  {busy ? 'Building…' : 'Use ChatGPT'}
+                </button>
+              )}
+              <button onClick={build} disabled={!a.about.trim()} className="btn-primary">
+                Build my brand
+              </button>
+            </div>
           </div>
+          {!ready && (
+            <p className="text-center text-[11px] text-valmer-slate/50">
+              Uses the built-in writer. <button onClick={onOpenAI} className="underline">Connect ChatGPT</button> for AI-written pillars.
+            </p>
+          )}
         </div>
       </div>
     </div>
