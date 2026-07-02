@@ -15,10 +15,10 @@ import Campaigns from './views/Campaigns'
 import Strategy from './views/Strategy'
 
 const NAV = [
-  { to: '/library', label: 'Content Library', icon: '◳' },
-  { to: '/pillars', label: 'Pillar Board', icon: '▦' },
-  { to: '/storyline', label: 'Storyline', icon: '◷' },
   { to: '/calendar', label: 'Calendar', icon: '▤' },
+  { to: '/library', label: 'Content Library', icon: '◳' },
+  { to: '/storyline', label: 'Storyline', icon: '◷' },
+  { to: '/pillars', label: 'Pillar Board', icon: '▦' },
   { to: '/campaigns', label: 'Campaigns', icon: '◆' },
   { to: '/strategy', label: 'Strategy Score', icon: '◎' },
 ]
@@ -118,7 +118,7 @@ export default function App() {
 
       <main className="flex-1 overflow-auto">
         <Routes>
-          <Route path="/" element={<Navigate to="/library" replace />} />
+          <Route path="/" element={<Navigate to="/calendar" replace />} />
           <Route path="/library" element={<Library />} />
           <Route path="/pillars" element={<PillarBoard />} />
           <Route path="/storyline" element={<Storyline />} />

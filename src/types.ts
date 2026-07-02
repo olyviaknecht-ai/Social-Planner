@@ -67,6 +67,7 @@ export interface ContentAsset {
   location: string
   event: string
   campaignId?: string
+  folderId?: string
   tags: string[]
   suggestedPillars: string[] // pillar ids
   selectedPillarId?: string
@@ -138,6 +139,12 @@ export interface ScheduledPost {
   status: PostStatus
   optional: boolean // extra post beyond the 3x/week cadence
   phase: number // 1-4
+}
+
+// A user-made folder to organize the content library (e.g. Events, Headshots).
+export interface Folder {
+  id: string
+  name: string
 }
 
 // A remembered person so captions can be specific about who is in a photo.

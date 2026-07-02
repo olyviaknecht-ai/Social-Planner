@@ -16,11 +16,12 @@ import PeopleManager from '../components/PeopleManager'
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
 export default function Library() {
-  const { assets, pillars, posts, people, campaigns, addAsset, addPost, updateAsset, updateAssets, createCarouselPost } = useStore()
+  const { assets, pillars, posts, people, campaigns, folders, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, createCarouselPost } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
   const [filter, setFilter] = useState('all')
+  const [folderFilter, setFolderFilter] = useState<string>('all')
   const [grouped, setGrouped] = useState(false)
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -48,12 +49,13 @@ export default function Library() {
   const clear = () => setSelected(new Set())
 
   const filterDef = FILTERS.find((f) => f.id === filter) || FILTERS[0]
+  const inFolder = (a: ContentAsset) => folderFilter === 'all' || (folderFilter === 'none' ? !a.folderId : a.folderId === folderFilter)
   const filtered = useMemo(
     () =>
       assets
-        .filter((a) => filterDef.test(a, { posts }))
+        .filter((a) => inFolder(a) && filterDef.test(a, { posts }))
         .sort((a, b) => STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt)),
-    [assets, filterDef, posts],
+    [assets, filterDef, posts, folderFilter],
   )
 
   // ---- single-asset post creation ----
@@ -126,6 +128,28 @@ export default function Library() {
         <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       </div>
 
+      {/* folders */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-valmer-slate/50">Folders</span>
+        <button onClick={() => setFolderFilter('all')} className={cls('chip border', folderFilter === 'all' ? 'bg-valmer-clay text-white border-valmer-clay' : 'border-black/15 text-valmer-slate')}>
+          All
+        </button>
+        {folders.map((f) => {
+          const count = assets.filter((a) => a.folderId === f.id).length
+          return (
+            <button key={f.id} onClick={() => setFolderFilter(f.id)} onDoubleClick={() => { if (confirm(`Delete folder "${f.name}"? Assets stay, just unfiled.`)) removeFolder(f.id) }} className={cls('chip border', folderFilter === f.id ? 'bg-valmer-clay text-white border-valmer-clay' : 'border-black/15 text-valmer-slate')} title="Double-click to delete">
+              {f.name} <span className="opacity-50">{count}</span>
+            </button>
+          )
+        })}
+        <button onClick={() => setFolderFilter('none')} className={cls('chip border', folderFilter === 'none' ? 'bg-valmer-clay text-white border-valmer-clay' : 'border-black/15 text-valmer-slate/60')}>
+          Unfiled
+        </button>
+        <button onClick={() => { const n = prompt('New folder name'); if (n?.trim()) { const id = addFolder(n.trim()); setFolderFilter(id) } }} className="chip border border-dashed border-black/25 text-valmer-slate/70 hover:bg-black/5">
+          + New folder
+        </button>
+      </div>
+
       {/* filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => {
@@ -182,6 +206,11 @@ export default function Library() {
           <select onChange={(e) => { if (e.target.value) { updateAssets(ids, { campaignId: e.target.value }); flash('Campaign assigned'); e.target.value = '' } }} className="rounded-lg border border-black/10 px-2 py-1 text-xs">
             <option value="">Assign campaign…</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <select onChange={(e) => { if (e.target.value) { updateAssets(ids, { folderId: e.target.value === '__none' ? undefined : e.target.value }); flash('Moved to folder'); clear(); e.target.value = '' } }} className="rounded-lg border border-black/10 px-2 py-1 text-xs">
+            <option value="">Move to folder…</option>
+            {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            <option value="__none">Remove from folder</option>
           </select>
           <button onClick={batchCaptions} className="btn-primary py-1.5 text-xs">Generate captions</button>
           <button onClick={batchCarousel} disabled={selected.size < 2} className="btn-outline py-1.5 text-xs disabled:opacity-40">Create carousel</button>

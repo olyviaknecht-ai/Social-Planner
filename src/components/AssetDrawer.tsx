@@ -10,7 +10,7 @@ import Thumbnail from './Thumbnail'
 import { PillarBadge } from './Badges'
 
 export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId: string; onClose: () => void; onOpenPost: (id: string) => void }) {
-  const { assets, pillars, campaigns, people, aiConfig, updateAsset, removeAsset, reanalyzeAsset, addPost } = useStore()
+  const { assets, pillars, campaigns, folders, people, aiConfig, updateAsset, removeAsset, reanalyzeAsset, addPost } = useStore()
   const asset = assets.find((a) => a.id === assetId)
   const [busy, setBusy] = useState(false)
   if (!asset) return null
@@ -115,6 +115,15 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
                 <option value="">None</option>
                 {campaigns.map((c) => (
                   <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Folder</label>
+              <select value={asset.folderId || ''} onChange={(e) => set({ folderId: e.target.value || undefined })} className="input">
+                <option value="">Unfiled</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
               </select>
             </div>

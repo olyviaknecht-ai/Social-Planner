@@ -5,6 +5,7 @@ import type {
   Campaign,
   ContentAsset,
   ContentPillar,
+  Folder,
   MetaConfig,
   PersonMemory,
   ScheduledPost,
@@ -27,8 +28,13 @@ interface State {
   posts: ScheduledPost[]
   weeks: StorylineWeek[]
   people: PersonMemory[]
+  folders: Folder[]
   aiConfig: AIConfig
   metaConfig: MetaConfig
+
+  addFolder: (name: string) => string
+  renameFolder: (id: string, name: string) => void
+  removeFolder: (id: string) => void
 
   setAIConfig: (patch: Partial<AIConfig>) => void
   setMetaConfig: (patch: Partial<MetaConfig>) => void
@@ -77,8 +83,26 @@ export const useStore = create<State>()(
       posts: [],
       weeks: buildStoryline(),
       people: [],
+      folders: [
+        { id: 'f-events', name: 'Events' },
+        { id: 'f-headshots', name: 'Headshots' },
+        { id: 'f-team', name: 'Team' },
+        { id: 'f-community', name: 'Community' },
+      ],
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
       metaConfig: { appId: '', configId: '', pageId: '', pageToken: '', pageName: '', igUserId: '' },
+
+      addFolder: (name) => {
+        const id = uid('folder')
+        set((s) => ({ folders: [...s.folders, { id, name: name.trim() || 'New folder' }] }))
+        return id
+      },
+      renameFolder: (id, name) => set((s) => ({ folders: s.folders.map((f) => (f.id === id ? { ...f, name } : f)) })),
+      removeFolder: (id) =>
+        set((s) => ({
+          folders: s.folders.filter((f) => f.id !== id),
+          assets: s.assets.map((a) => (a.folderId === id ? { ...a, folderId: undefined } : a)),
+        })),
 
       setAIConfig: (patch) => set((s) => ({ aiConfig: { ...s.aiConfig, ...patch } })),
       setMetaConfig: (patch) => set((s) => ({ metaConfig: { ...s.metaConfig, ...patch } })),
@@ -397,6 +421,7 @@ export const useStore = create<State>()(
         posts: s.posts,
         weeks: s.weeks,
         people: s.people,
+        folders: s.folders,
         aiConfig: s.aiConfig,
         metaConfig: s.metaConfig,
       }),
