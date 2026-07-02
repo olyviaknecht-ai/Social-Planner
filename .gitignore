@@ -6,3 +6,9 @@ dist
 .vite
 .claude
 *.tsbuildinfo
+
+data.db
+data.db-*
+*.db
+*.db-shm
+*.db-wal

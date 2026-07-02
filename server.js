@@ -3,9 +3,12 @@
 // keep working once this is deployed off localhost.
 import express from 'express'
 import { createProxyMiddleware } from 'http-proxy-middleware'
+import cookieParser from 'cookie-parser'
 import crypto from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import authRouter from './server/auth.js'
+import brandsRouter from './server/brands.js'
 
 // Load a local, gitignored .env if present (Node 20.12+). On a host like Render,
 // these come from the dashboard environment instead.
@@ -18,6 +21,8 @@ try {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 8080
+
+app.use(cookieParser())
 
 // ---- Password gate (HTTP Basic Auth) ----
 // Set APP_PASSWORD (and optionally APP_USER) in your host's environment to require
@@ -35,6 +40,8 @@ function safeEqual(a, b) {
 
 if (APP_PASSWORD) {
   app.use((req, res, next) => {
+    // The app's own accounts protect /api; don't double-gate those routes.
+    if (req.path.startsWith('/api')) return next()
     const [scheme, encoded] = (req.headers.authorization || '').split(' ')
     if (scheme === 'Basic' && encoded) {
       const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':')
@@ -75,6 +82,11 @@ app.use(
     pathRewrite: { '^/meta-proxy': '' },
   }),
 )
+
+// ---- App API (accounts, shared brands, edit history) ----
+app.use('/api', express.json({ limit: '20mb' }))
+app.use('/api', authRouter)
+app.use('/api/brands', brandsRouter)
 
 const dist = path.join(__dirname, 'dist')
 app.use(express.static(dist))
