@@ -12,10 +12,10 @@ import Thumbnail from './Thumbnail'
 import Lightbox from './Lightbox'
 
 export default function PostEditor({ postId, onClose }: { postId: string; onClose: () => void }) {
-  const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, brands, activeBrandId, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
+  const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, brands, activeBrandId, brief, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
     useStore()
   const activeBrand = brands.find((b) => b.id === activeBrandId)
-  const brandCtx = activeBrand ? { name: activeBrand.name, brief: activeBrand.brief } : undefined
+  const brandCtx = activeBrand ? { name: activeBrand.name, brief } : undefined
   const post = posts.find((p) => p.id === postId)
   const [assetPicker, setAssetPicker] = useState(false)
   const [guidance, setGuidance] = useState(post?.promptNotes || '')

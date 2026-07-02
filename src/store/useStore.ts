@@ -17,6 +17,8 @@ import { analyzeAsset } from '../engine/analyze'
 import { buildSchedule, buildStoryline } from '../engine/planner'
 import { generateCaption, generateEmail } from '../engine/caption'
 import { removeBlob } from './blobs'
+import { api } from '../lib/api'
+import type { ApiUser } from '../lib/api'
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -44,9 +46,10 @@ interface Bucket {
   people: PersonMemory[]
   folders: Folder[]
   metaConfig: MetaConfig
+  brief: string
 }
 function bucketFrom(s: Bucket): Bucket {
-  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig }
+  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig, brief: s.brief }
 }
 function saveBucket(id: string, s: Bucket) {
   try { localStorage.setItem(BRAND_KEY(id), JSON.stringify(bucketFrom(s))) } catch { /* quota */ }
@@ -57,10 +60,17 @@ function loadBucket(id: string): Bucket | null {
 // A brand-new brand is a blank slate — no pillars or storyline carry over.
 // Onboarding (ChatGPT) builds the pillars; "Generate plan" builds the storyline.
 function freshBucket(): Bucket {
-  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta() }
+  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta(), brief: '' }
 }
 
 interface State {
+  // Session / account
+  sessionStatus: 'loading' | 'out' | 'in'
+  user: ApiUser | null
+  authError: string | null
+  role: string // my role on the active brand
+  members: { email: string; name: string; role: string }[]
+
   brands: Brand[]
   activeBrandId: string
   assets: ContentAsset[]
@@ -70,14 +80,25 @@ interface State {
   weeks: StorylineWeek[]
   people: PersonMemory[]
   folders: Folder[]
+  brief: string
   aiConfig: AIConfig
   metaConfig: MetaConfig
 
-  addBrand: (name: string) => string
-  switchBrand: (id: string) => void
+  setBrief: (brief: string) => void
+  initSession: () => Promise<void>
+  login: (email: string, password: string) => Promise<void>
+  signup: (email: string, password: string, name: string) => Promise<void>
+  logout: () => Promise<void>
+  loadBrands: () => Promise<void>
+  openBrand: (id: string) => Promise<void>
+  shareActiveBrand: (email: string, role: string) => Promise<{ status: string; email: string }>
+  loadActivity: () => Promise<{ at: string; summary: string; name: string; email: string }[]>
+
+  addBrand: (name: string) => Promise<void>
+  switchBrand: (id: string) => Promise<void>
   renameBrand: (id: string, name: string) => void
   updateBrand: (id: string, patch: Partial<Brand>) => void
-  removeBrand: (id: string) => void
+  removeBrand: (id: string) => Promise<void>
   setPillars: (pillars: ContentPillar[]) => void
 
   addFolder: (name: string) => string
@@ -126,49 +147,113 @@ interface State {
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      brands: [{ id: 'brand-1', name: 'Valmer Land Title' }],
-      activeBrandId: 'brand-1',
+      sessionStatus: 'loading',
+      user: null,
+      authError: null,
+      role: 'owner',
+      members: [],
+      brands: [],
+      activeBrandId: '',
       assets: [],
-      pillars: SEED_PILLARS,
+      pillars: [],
       campaigns: [],
       posts: [],
-      weeks: buildStoryline(undefined, SEED_PILLARS),
+      weeks: [],
       people: [],
       folders: DEFAULT_FOLDERS.map((f) => ({ ...f })),
+      brief: '',
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
       metaConfig: freshMeta(),
 
-      addBrand: (name) => {
-        const s = get()
-        saveBucket(s.activeBrandId, s)
-        const id = uid('brand')
-        const b = freshBucket()
-        saveBucket(id, b)
-        set({ brands: [...s.brands, { id, name: name.trim() || 'New brand' }], activeBrandId: id, ...b })
-        return id
+      setBrief: (brief) => set({ brief }),
+      initSession: async () => {
+        try {
+          const { user } = await api.me()
+          set({ sessionStatus: 'in', user, authError: null })
+          await get().loadBrands()
+        } catch {
+          set({ sessionStatus: 'out', user: null })
+        }
       },
-      switchBrand: (id) => {
-        const s = get()
-        if (id === s.activeBrandId) return
-        saveBucket(s.activeBrandId, s)
-        const b = loadBucket(id) || freshBucket()
-        set({ activeBrandId: id, ...b })
+      login: async (email, password) => {
+        set({ authError: null })
+        try {
+          const { user } = await api.login(email, password)
+          set({ sessionStatus: 'in', user })
+          await get().loadBrands()
+        } catch (e: any) {
+          set({ authError: e?.message || 'Login failed' })
+          throw e
+        }
+      },
+      signup: async (email, password, name) => {
+        set({ authError: null })
+        try {
+          const { user } = await api.signup(email, password, name)
+          set({ sessionStatus: 'in', user })
+          await get().loadBrands()
+        } catch (e: any) {
+          set({ authError: e?.message || 'Sign up failed' })
+          throw e
+        }
+      },
+      logout: async () => {
+        markSaved('') // stop autosave from firing on the cleared state
+        try { await api.logout() } catch { /* ignore */ }
+        set({ sessionStatus: 'out', user: null, brands: [], activeBrandId: '', ...freshBucket(), pillars: [] })
+      },
+
+      loadBrands: async () => {
+        const { brands } = await api.listBrands()
+        // First login with nothing on the server: seed one brand from local content
+        // if we have any, otherwise a blank one, so the user always lands somewhere.
+        if (!brands.length) {
+          const local = localImportBucket()
+          const created = await api.createBrand(local ? local.name : 'My Brand', local ? local.bucket : freshBucket())
+          await get().loadBrands()
+          await get().openBrand(created.id)
+          return
+        }
+        set({ brands: brands.map((b) => ({ id: b.id, name: b.name })) })
+        const active = get().activeBrandId && brands.some((b) => b.id === get().activeBrandId) ? get().activeBrandId : brands[0].id
+        await get().openBrand(active)
+      },
+      openBrand: async (id) => {
+        const data = await api.getBrand(id)
+        let bucket = freshBucket()
+        try {
+          const parsed = data.content ? JSON.parse(data.content) : null
+          if (parsed && typeof parsed === 'object') bucket = { ...bucket, ...parsed }
+        } catch { /* keep fresh */ }
+        set({ activeBrandId: id, role: data.role, members: data.members || [], ...bucket })
+        markSaved(JSON.stringify(bucketFrom(get())))
+      },
+
+      shareActiveBrand: async (email, role) => {
+        const res = await api.shareBrand(get().activeBrandId, email, role)
+        const data = await api.getBrand(get().activeBrandId).catch(() => null)
+        if (data) set({ members: data.members || [] })
+        return res
+      },
+      loadActivity: async () => (await api.activity(get().activeBrandId)).activity,
+
+      addBrand: async (name) => {
+        const created = await api.createBrand(name.trim() || 'New brand', freshBucket())
+        await get().loadBrands()
+        await get().openBrand(created.id)
+      },
+      switchBrand: async (id) => {
+        if (id === get().activeBrandId) return
+        await flushSave()
+        await get().openBrand(id)
       },
       renameBrand: (id, name) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) })),
       updateBrand: (id, patch) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, ...patch } : b)) })),
       setPillars: (pillars) => set({ pillars }),
-      removeBrand: (id) => {
-        const s = get()
-        if (s.brands.length <= 1) return
-        try { localStorage.removeItem(BRAND_KEY(id)) } catch { /* ignore */ }
-        const remaining = s.brands.filter((b) => b.id !== id)
-        if (id === s.activeBrandId) {
-          const next = remaining[0]
-          const b = loadBucket(next.id) || freshBucket()
-          set({ brands: remaining, activeBrandId: next.id, ...b })
-        } else {
-          set({ brands: remaining })
-        }
+      removeBrand: async (id) => {
+        if (get().brands.length <= 1) return
+        await api.deleteBrand(id).catch(() => {})
+        await get().loadBrands()
       },
 
       addFolder: (name) => {
@@ -496,53 +581,72 @@ export const useStore = create<State>()(
       },
 
       resetAll: () =>
-        set({ assets: [], pillars: SEED_PILLARS, campaigns: [], posts: [], weeks: buildStoryline(undefined, SEED_PILLARS), people: [] }),
+        set({ ...freshBucket() }),
     }),
     {
       name: 'valmer-storyboard',
-      partialize: (s) => ({
-        brands: s.brands,
-        activeBrandId: s.activeBrandId,
-        assets: s.assets,
-        pillars: s.pillars,
-        campaigns: s.campaigns,
-        posts: s.posts,
-        weeks: s.weeks,
-        people: s.people,
-        folders: s.folders,
-        aiConfig: s.aiConfig,
-        metaConfig: s.metaConfig,
-      }),
-      // Deep-merge nested config objects so new fields added in updates get their
-      // defaults instead of being dropped by the default shallow merge.
+      // Only the AI key/settings stay on this device now; all brand content lives
+      // on the server so it syncs across computers and shared users.
+      partialize: (s) => ({ aiConfig: s.aiConfig }),
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<State>
-        // Existing single-workspace users: fold their content into a first brand.
-        const brands = p.brands && p.brands.length ? p.brands : [{ id: 'brand-1', name: 'Valmer Land Title' }]
-        const activeBrandId = p.activeBrandId && brands.some((b) => b.id === p.activeBrandId) ? p.activeBrandId : brands[0].id
-        // Refresh default pillar colors to the new palette, but only where the user
-        // hasn't customized them (i.e. the stored color is the old default).
-        const OLD: Record<string, string> = {
-          people: '#c0714f', growth: '#5b7c6f', events: '#c79a4b', proof: '#7a6cae',
-          community: '#4a8db5', tools: '#3f7d7a', closing: '#9c5d6b',
-        }
-        const pillars = (p.pillars || current.pillars).map((pl) => {
-          const fresh = SEED_PILLARS.find((s) => s.id === pl.id)
-          return fresh && OLD[pl.id] === pl.color ? { ...pl, color: fresh.color } : pl
-        })
-        return {
-          ...current,
-          ...p,
-          brands,
-          activeBrandId,
-          pillars,
-          aiConfig: { ...current.aiConfig, ...(p.aiConfig || {}) },
-          metaConfig: { ...current.metaConfig, ...(p.metaConfig || {}) },
-        }
+        return { ...current, aiConfig: { ...current.aiConfig, ...(p.aiConfig || {}) } }
       },
     },
   ),
 )
+
+// ---- Server sync: autosave the active brand's content (debounced) ----
+let lastSaved = ''
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+function markSaved(snap: string) {
+  lastSaved = snap
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+}
+
+async function flushSave() {
+  const s = useStore.getState()
+  if (s.sessionStatus !== 'in' || !s.activeBrandId || s.role === 'viewer') return
+  const snap = JSON.stringify(bucketFrom(s))
+  if (snap === lastSaved) return
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+  lastSaved = snap
+  try { await api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited', s.brands.find((b) => b.id === s.activeBrandId)?.name) } catch { /* offline */ }
+}
+
+useStore.subscribe((s) => {
+  if (s.sessionStatus !== 'in' || !s.activeBrandId || s.role === 'viewer') return
+  const snap = JSON.stringify(bucketFrom(s))
+  if (snap === lastSaved) return
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    lastSaved = snap
+    api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited', s.brands.find((b) => b.id === s.activeBrandId)?.name).catch(() => {})
+  }, 1000)
+})
+
+// One-time import of any pre-existing local content, captured before persist rewrites it.
+const legacyRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('valmer-storyboard') : null
+function localImportBucket(): { name: string; bucket: Bucket } | null {
+  try {
+    if (!legacyRaw) return null
+    const st = JSON.parse(legacyRaw).state
+    if (!st || !st.assets) return null
+    const bucket: Bucket = {
+      assets: st.assets || [], pillars: st.pillars || [], campaigns: st.campaigns || [], posts: st.posts || [],
+      weeks: st.weeks || [], people: st.people || [], folders: st.folders || DEFAULT_FOLDERS, metaConfig: st.metaConfig || freshMeta(), brief: st.brief || '',
+    }
+    if (!bucket.assets.length && !bucket.pillars.length && !bucket.posts.length) return null
+    const name = (st.brands && st.brands.find((b: Brand) => b.id === st.activeBrandId)?.name) || 'My Brand'
+    return { name, bucket }
+  } catch {
+    return null
+  }
+}
+
+// Kick off session check on load.
+useStore.getState().initSession()
 
 function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr))

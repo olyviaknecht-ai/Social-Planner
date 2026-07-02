@@ -8,6 +8,7 @@ import AISettings from './components/AISettings'
 import MetaSettings from './components/MetaSettings'
 import BrandSwitcher from './components/BrandSwitcher'
 import BrandOnboarding from './components/BrandOnboarding'
+import Login from './components/Login'
 import { cls } from './lib/ui'
 import Library from './views/Library'
 import PillarBoard from './views/PillarBoard'
@@ -26,14 +27,19 @@ const NAV = [
 ]
 
 export default function App() {
-  const { posts, pillars, assets, aiConfig, metaConfig, activeBrandId, generatePlan, resetAll } = useStore()
+  const { posts, pillars, assets, aiConfig, metaConfig, activeBrandId, sessionStatus, user, role, logout, generatePlan, resetAll } = useStore()
   const strategy = useMemo(() => analyzeStrategy(posts, pillars, assets), [posts, pillars, assets])
   const [aiOpen, setAiOpen] = useState(false)
   const [metaOpen, setMetaOpen] = useState(false)
   const [onboardDismissed, setOnboardDismissed] = useState<string | null>(null)
   const aiOn = aiReady(aiConfig)
   const metaOn = metaReady(metaConfig)
-  const needsOnboarding = pillars.length === 0 && onboardDismissed !== activeBrandId
+  const needsOnboarding = sessionStatus === 'in' && !!activeBrandId && pillars.length === 0 && onboardDismissed !== activeBrandId
+
+  if (sessionStatus === 'loading') {
+    return <div className="flex h-full items-center justify-center text-valmer-slate/50">Loading…</div>
+  }
+  if (sessionStatus === 'out') return <Login />
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
@@ -105,15 +111,19 @@ export default function App() {
             </span>
           </button>
           <div className="flex items-center justify-between text-[11px] text-white/40 leading-snug">
-            <span>{assets.length} assets · {posts.length} posts planned</span>
+            <span>{assets.length} assets · {posts.length} posts</span>
             <button
               onClick={() => {
-                if (confirm('Clear all content, posts, and campaigns? This cannot be undone.')) resetAll()
+                if (confirm('Clear this brand\'s content, posts, and campaigns? This cannot be undone.')) resetAll()
               }}
               className="text-white/40 underline hover:text-white/70"
             >
               Reset
             </button>
+          </div>
+          <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[11px] text-white/50">
+            <span className="truncate">{user?.name || user?.email}{role === 'viewer' ? ' · view only' : ''}</span>
+            <button onClick={() => logout()} className="text-white/50 underline hover:text-white/80">Log out</button>
           </div>
         </div>
       </aside>

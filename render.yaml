@@ -1,18 +1,19 @@
-# One-click config for deploying to Render (render.com).
-# Create a new "Blueprint" from your Git repo and Render reads this file.
+# Deploy to Render (render.com): New → Blueprint → pick this repo.
 services:
   - type: web
     name: valmer-content-storyboard
     runtime: node
-    plan: free
+    plan: starter # a persistent disk (below) needs a paid instance; free tier loses data on redeploy
     buildCommand: npm install && npm run build
     startCommand: npm start
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Login for the site. Username defaults to "valmer"; set a password in the
-      # Render dashboard (it stays out of the repo). Leaving APP_PASSWORD unset = open site.
-      - key: APP_USER
-        value: valmer
-      - key: APP_PASSWORD
-        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/data.db

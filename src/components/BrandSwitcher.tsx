@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { cls } from '../lib/ui'
+import ShareBrand from './ShareBrand'
 
 export default function BrandSwitcher() {
   const { brands, activeBrandId, switchBrand, addBrand, renameBrand, removeBrand } = useStore()
   const [open, setOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const active = brands.find((b) => b.id === activeBrandId) || brands[0]
 
   return (
@@ -50,14 +52,22 @@ export default function BrandSwitcher() {
               </div>
             ))}
             <button
+              onClick={() => { setShareOpen(true); setOpen(false) }}
+              className="block w-full border-t border-black/5 px-4 py-2.5 text-left text-sm text-valmer-slate hover:bg-black/5"
+            >
+              Share this brand
+            </button>
+            <button
               onClick={() => { const n = prompt('New brand name'); if (n?.trim()) { addBrand(n.trim()); setOpen(false) } }}
-              className="mt-1 block w-full border-t border-black/5 px-4 py-2.5 text-left text-sm font-medium text-valmer-clay hover:bg-valmer-clay/5"
+              className="block w-full border-t border-black/5 px-4 py-2.5 text-left text-sm font-medium text-valmer-clay hover:bg-valmer-clay/5"
             >
               + Add a brand
             </button>
           </div>
         </>
       )}
+
+      {shareOpen && <ShareBrand onClose={() => setShareOpen(false)} />}
     </div>
   )
 }

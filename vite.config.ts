@@ -10,6 +10,8 @@ export default defineConfig({
     // (no CORS). The API key is forwarded from the browser via the Authorization
     // header and never stored server-side.
     proxy: {
+      // App API runs on the Node server (npm start) during local dev.
+      '/api': { target: 'http://localhost:8080', changeOrigin: true },
       '/openai-proxy': {
         target: 'https://api.openai.com',
         changeOrigin: true,

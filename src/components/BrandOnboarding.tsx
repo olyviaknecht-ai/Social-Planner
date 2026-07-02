@@ -38,7 +38,7 @@ const QUESTIONS: { key: keyof BrandAnswers; label: string; placeholder: string }
 ]
 
 export default function BrandOnboarding({ onClose, onOpenAI }: { onClose: () => void; onOpenAI: () => void }) {
-  const { brands, activeBrandId, aiConfig, setPillars, updateBrand } = useStore()
+  const { brands, activeBrandId, aiConfig, setPillars, setBrief } = useStore()
   const active = brands.find((b) => b.id === activeBrandId)
   const [a, setA] = useState<BrandAnswers>({ name: active?.name || '', about: '', audience: '', goals: '', vibe: '', highlights: '' })
   const [busy, setBusy] = useState(false)
@@ -52,7 +52,7 @@ export default function BrandOnboarding({ onClose, onOpenAI }: { onClose: () => 
   const build = () => {
     const res = buildBrandLocally(answers())
     setPillars(toPillars(res.pillars))
-    updateBrand(activeBrandId, { brief: res.brief })
+    setBrief(res.brief)
     onClose()
   }
 
@@ -63,7 +63,7 @@ export default function BrandOnboarding({ onClose, onOpenAI }: { onClose: () => 
     try {
       const res = await aiBuildBrand(aiConfig, answers())
       setPillars(toPillars(res.pillars))
-      updateBrand(activeBrandId, { brief: res.brief })
+      setBrief(res.brief)
       onClose()
     } catch (e: any) {
       setErr(e?.message || 'ChatGPT could not build it. Use the built-in option instead.')

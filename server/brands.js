@@ -70,6 +70,16 @@ router.post('/:id/share', (req, res) => {
   }
 })
 
+router.delete('/:id', (req, res) => {
+  const m = membership(req.params.id, req.user.id)
+  if (!m || m.role !== 'owner') return res.status(403).json({ error: 'Only the owner can delete this brand' })
+  db.prepare('DELETE FROM brands WHERE id=?').run(req.params.id)
+  db.prepare('DELETE FROM brand_members WHERE brand_id=?').run(req.params.id)
+  db.prepare('DELETE FROM edits WHERE brand_id=?').run(req.params.id)
+  db.prepare('DELETE FROM invites WHERE brand_id=?').run(req.params.id)
+  res.json({ ok: true })
+})
+
 router.get('/:id/activity', (req, res) => {
   const m = membership(req.params.id, req.user.id)
   if (!m) return res.status(403).json({ error: 'No access to this brand' })

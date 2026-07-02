@@ -24,36 +24,8 @@ const PORT = process.env.PORT || 8080
 
 app.use(cookieParser())
 
-// ---- Password gate (HTTP Basic Auth) ----
-// Set APP_PASSWORD (and optionally APP_USER) in your host's environment to require
-// a login before anything is served, including the proxy endpoints. If APP_PASSWORD
-// is unset, the site is open (handy for local runs).
-const APP_USER = process.env.APP_USER || 'valmer'
-const APP_PASSWORD = process.env.APP_PASSWORD || ''
-
-function safeEqual(a, b) {
-  const ab = Buffer.from(String(a))
-  const bb = Buffer.from(String(b))
-  if (ab.length !== bb.length) return false
-  return crypto.timingSafeEqual(ab, bb)
-}
-
-if (APP_PASSWORD) {
-  app.use((req, res, next) => {
-    // The app's own accounts protect /api; don't double-gate those routes.
-    if (req.path.startsWith('/api')) return next()
-    const [scheme, encoded] = (req.headers.authorization || '').split(' ')
-    if (scheme === 'Basic' && encoded) {
-      const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':')
-      if (safeEqual(user, APP_USER) && safeEqual(pass, APP_PASSWORD)) return next()
-    }
-    res.set('WWW-Authenticate', 'Basic realm="Valmer Content Storyboard", charset="UTF-8"')
-    return res.status(401).send('Authentication required.')
-  })
-  console.log('Password gate is ON.')
-} else {
-  console.warn('No APP_PASSWORD set — the site is OPEN. Set APP_PASSWORD to require a login.')
-}
+// Access is controlled by the app's own accounts (see /api). The static shell is
+// public but shows only a login screen until you sign in.
 
 // Note: register proxies BEFORE any body parser so POST bodies stream through intact.
 app.use(
