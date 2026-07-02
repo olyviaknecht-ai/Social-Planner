@@ -28,18 +28,27 @@ function stagePillarId(stage: string, pillars: { id: string; title: string }[]):
 }
 
 export default function Campaigns() {
-  const { campaigns, assets, pillars, posts, addCampaign, updateCampaign, removeCampaign, addPost, updateAsset } = useStore()
+  const { campaigns, assets, pillars, posts, addCampaign, updateCampaign, removeCampaign, addPost, updatePost, updateAsset } = useStore()
   const [selected, setSelected] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
   const campaign = campaigns.find((c) => c.id === selected)
 
-  const createCampaign = (title: string) => {
+  const createCampaign = (title: string, blank = false) => {
     const id = addCampaign({
       title,
       goal: '',
-      beats: CAMPAIGN_STAGES.map((stage, i) => ({ id: `beat-${i}`, stage, description: '', assetIds: [] })),
+      beats: blank ? [] : CAMPAIGN_STAGES.map((stage, i) => ({ id: `beat-${i}`, stage, description: '', assetIds: [] })),
     })
     setSelected(id)
+  }
+
+  // Add a single post to a campaign (free-form, no fixed sequence needed).
+  const addPostToCampaign = (c: Campaign) => {
+    const today = new Date().toISOString().slice(0, 10)
+    const date = today >= c.startDate && today <= c.endDate ? today : c.startDate
+    const id = addPost({ campaignId: c.id, scheduledDate: date, title: `${c.title} post`, platforms: ['instagram', 'facebook'], status: 'idea' })
+    updateCampaign(c.id, { status: 'active' })
+    setOpenPost(id)
   }
 
   const generateSequence = (c: Campaign) => {
@@ -70,13 +79,20 @@ export default function Campaigns() {
     <div className="p-6">
       <PageHeader
         title="Campaigns"
-        subtitle="Build a sequence for a major initiative: tease, value, proof, faces, invite, reminder, last call, recap, follow-up."
+        subtitle="Start a blank campaign and add as many posts as you want, or use a template's suggested sequence."
       />
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-1 space-y-3">
           <div className="card p-4">
             <div className="mb-2 text-sm font-semibold text-valmer-slate">Start a campaign</div>
+            <button
+              onClick={() => { const n = prompt('Campaign name'); if (n?.trim()) createCampaign(n.trim(), true) }}
+              className="btn-primary mb-3 w-full py-1.5 text-sm"
+            >
+              + Blank campaign
+            </button>
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-valmer-slate/50">Or from a template</div>
             <div className="flex flex-wrap gap-1.5">
               {CAMPAIGN_TEMPLATES.map((t) => (
                 <button key={t} onClick={() => createCampaign(t)} className="chip border border-black/10 text-valmer-slate hover:bg-black/5">
@@ -96,7 +112,7 @@ export default function Campaigns() {
               >
                 <div>
                   <div className="font-medium text-valmer-ink">{c.title}</div>
-                  <div className="text-xs text-valmer-slate/50">{c.beats.filter((b) => b.postId).length}/{c.beats.length} beats placed</div>
+                  <div className="text-xs text-valmer-slate/50">{posts.filter((p) => p.campaignId === c.id).length} posts</div>
                 </div>
                 <span className={cls('chip', c.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500')}>{c.status}</span>
               </button>
@@ -122,12 +138,46 @@ export default function Campaigns() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <button onClick={() => generateSequence(campaign)} className="btn-primary">Place sequence</button>
+                  {campaign.beats.length > 0 && <button onClick={() => generateSequence(campaign)} className="btn-outline py-1.5 text-xs">Place full sequence</button>}
                   <button onClick={() => { removeCampaign(campaign.id); setSelected(null) }} className="btn text-rose-600 hover:bg-rose-50">Delete</button>
                 </div>
               </div>
 
+              {/* Free-form posts in this campaign */}
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="font-serif text-valmer-slate">Posts</div>
+                  <button onClick={() => addPostToCampaign(campaign)} className="btn-primary py-1.5 text-xs">+ Add post</button>
+                </div>
+                <div className="space-y-2">
+                  {posts.filter((p) => p.campaignId === campaign.id).sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)).map((p) => {
+                    const pillar = pillars.find((x) => x.id === p.pillarId)
+                    const asset = assets.find((a) => p.assetIds.includes(a.id))
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 rounded-lg border border-black/5 bg-white p-2.5">
+                        {asset ? <Thumbnail asset={asset} className="h-10 w-10 shrink-0 rounded-lg" /> : <div className="h-10 w-10 shrink-0 rounded-lg bg-valmer-sand" />}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-valmer-ink">{p.title}</div>
+                          <div className="flex items-center gap-2 text-[11px] text-valmer-slate/50">
+                            <span>{format(new Date(p.scheduledDate), 'MMM d')}</span>
+                            {pillar && <span style={{ color: pillar.color }}>{pillar.title}</span>}
+                            <span className="capitalize">{p.status}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => setOpenPost(p.id)} className="btn-outline py-1 text-xs">Edit</button>
+                        <button onClick={() => updatePost(p.id, { campaignId: undefined })} className="text-valmer-slate/30 hover:text-rose-500" title="Remove from campaign">✕</button>
+                      </div>
+                    )
+                  })}
+                  {posts.filter((p) => p.campaignId === campaign.id).length === 0 && (
+                    <div className="rounded-lg border border-dashed border-black/15 p-4 text-center text-sm text-valmer-slate/50">No posts yet. Click “Add post” to start filling this campaign.</div>
+                  )}
+                </div>
+              </div>
+
+              {campaign.beats.length > 0 && (
               <div className="space-y-2">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-valmer-slate/50">Suggested sequence</div>
                 {campaign.beats.map((beat, i) => {
                   const pillar = pillars.find((p) => p.id === stagePillarId(beat.stage, pillars))
                   const beatAssets = assets.filter((a) => beat.assetIds.includes(a.id))
@@ -165,6 +215,7 @@ export default function Campaigns() {
                   )
                 })}
               </div>
+              )}
             </div>
           )}
         </div>
