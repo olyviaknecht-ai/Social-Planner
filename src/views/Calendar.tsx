@@ -32,7 +32,7 @@ import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
 
 export default function Calendar() {
-  const { posts, pillars, weeks, assets, updatePost, addPost, generatePlan } = useStore()
+  const { posts, pillars, weeks, assets, updatePost, addPost, removePost, clearPosts, generatePlan } = useStore()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [dragId, setDragId] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
@@ -86,6 +86,14 @@ export default function Calendar() {
         action={
           <div className="flex gap-2">
             {posts.length === 0 && <button onClick={generatePlan} className="btn-primary">Generate plan</button>}
+            {posts.length > 0 && (
+              <button
+                onClick={() => { if (confirm(`Clear all ${posts.length} posts from the calendar? Your photos stay in the library.`)) clearPosts() }}
+                className="btn-outline text-rose-600 hover:bg-rose-50"
+              >
+                Clear calendar
+              </button>
+            )}
             <div className="relative">
               <button onClick={() => setExportOpen((v) => !v)} className="btn-outline">Export ▾</button>
               {exportOpen && (
@@ -136,6 +144,7 @@ export default function Calendar() {
                     onAdd={() => { const id = addPost({ scheduledDate: date, phase: phaseForDate(date), title: 'New post' }); setOpenPost(id) }}
                     onOpen={setOpenPost}
                     onDuplicate={(p) => addPost({ ...p, id: undefined as any, title: p.title + ' (copy)' })}
+                    onDelete={removePost}
                   />
                 )
               })}
@@ -175,6 +184,7 @@ function DayCell({
   onAdd,
   onOpen,
   onDuplicate,
+  onDelete,
 }: {
   date: string
   posts: ScheduledPost[]
@@ -185,6 +195,7 @@ function DayCell({
   onAdd: () => void
   onOpen: (id: string) => void
   onDuplicate: (p: ScheduledPost) => void
+  onDelete: (id: string) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date })
   const dayNum = date.slice(8)
@@ -207,14 +218,14 @@ function DayCell({
         {posts.map((p) => {
           const pillar = pillars.find((x) => x.id === p.pillarId)
           const asset = assets.find((a) => p.assetIds.includes(a.id))
-          return <PostCard key={p.id} post={p} pillar={pillar} asset={asset} onOpen={() => onOpen(p.id)} onDuplicate={() => onDuplicate(p)} />
+          return <PostCard key={p.id} post={p} pillar={pillar} asset={asset} onOpen={() => onOpen(p.id)} onDuplicate={() => onDuplicate(p)} onDelete={() => onDelete(p.id)} />
         })}
       </div>
     </div>
   )
 }
 
-function PostCard({ post, pillar, asset, onOpen, onDuplicate }: { post: ScheduledPost; pillar: any; asset: any; onOpen: () => void; onDuplicate: () => void }) {
+function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete }: { post: ScheduledPost; pillar: any; asset: any; onOpen: () => void; onDuplicate: () => void; onDelete: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: post.id })
   const isCarousel = post.format === 'carousel' || post.assetIds.length > 1
   return (
@@ -241,6 +252,7 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate }: { post: Schedule
       <div className="flex items-center justify-between border-t border-black/5 px-1.5 py-1">
         <button onClick={onOpen} className="text-[10px] text-valmer-sage hover:underline">edit</button>
         <button onClick={onDuplicate} className="text-[10px] text-valmer-slate/40 hover:text-valmer-slate">dup</button>
+        <button onClick={onDelete} className="text-[10px] text-valmer-slate/40 hover:text-rose-500" title="Delete post">del</button>
         <StatusBadge status={post.status} />
       </div>
     </div>

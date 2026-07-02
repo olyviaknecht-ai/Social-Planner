@@ -113,6 +113,7 @@ interface State {
   addPost: (p?: Partial<ScheduledPost>) => string
   updatePost: (id: string, patch: Partial<ScheduledPost>) => void
   removePost: (id: string) => void
+  clearPosts: () => void
   regenerateCaptionForPost: (id: string) => void
   addEmailVersionToPost: (id: string) => void
 
@@ -425,6 +426,13 @@ export const useStore = create<State>()(
         set((s) => ({ posts: s.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
 
       removePost: (id) => set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
+
+      clearPosts: () =>
+        set((s) => ({
+          posts: [],
+          // Freed-up assets go back to being options in the library.
+          assets: s.assets.map((a) => (a.status === 'scheduled' ? { ...a, status: 'unused' } : a)),
+        })),
 
       regenerateCaptionForPost: (id) =>
         set((s) => {
