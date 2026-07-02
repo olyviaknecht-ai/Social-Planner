@@ -18,7 +18,7 @@ export default function Storyline() {
         title="Storyline"
         subtitle="The 90-day arc, not just a calendar. It builds from familiarity to trust to value to action."
         action={
-          <button onClick={() => setWeeks({ weeks: buildStoryline() })} className="btn-outline">
+          <button onClick={() => setWeeks({ weeks: buildStoryline(undefined, pillars) })} className="btn-outline">
             Regenerate arc
           </button>
         }

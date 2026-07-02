@@ -131,7 +131,7 @@ export const useStore = create<State>()(
       pillars: SEED_PILLARS,
       campaigns: [],
       posts: [],
-      weeks: buildStoryline(),
+      weeks: buildStoryline(undefined, SEED_PILLARS),
       people: [],
       folders: DEFAULT_FOLDERS.map((f) => ({ ...f })),
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
@@ -475,7 +475,7 @@ export const useStore = create<State>()(
         const today = new Date().toISOString().slice(0, 10)
         const startsMonday = weeks.length && new Date(weeks[0].weekStart).getUTCDay() === 1
         const stale = !weeks.length || weeks[0].weekStart < today || !startsMonday
-        const fresh = stale ? buildStoryline() : weeks
+        const fresh = stale ? buildStoryline(undefined, pillars) : weeks
         const posts = buildSchedule(fresh, assets, pillars, people)
         const usedIds = new Set(posts.flatMap((p) => p.assetIds))
         set((s) => ({
@@ -488,7 +488,7 @@ export const useStore = create<State>()(
       },
 
       resetAll: () =>
-        set({ assets: [], pillars: SEED_PILLARS, campaigns: [], posts: [], weeks: buildStoryline(), people: [] }),
+        set({ assets: [], pillars: SEED_PILLARS, campaigns: [], posts: [], weeks: buildStoryline(undefined, SEED_PILLARS), people: [] }),
     }),
     {
       name: 'valmer-storyboard',
