@@ -86,16 +86,16 @@ export const CAMPAIGN_STAGES = [
   'Follow-up/resource',
 ]
 
+// Universal campaign starting points that fit any brand. Rename after creating.
 export const CAMPAIGN_TEMPLATES = [
-  'Agent Advantage',
-  'Marketing Power Hour',
-  'New Year, New Agent',
-  'Good Talk Club',
-  'Office Opening',
-  'RMHC / Community Initiative',
-  'Podcast Episode Launch',
-  'COSI / American Dream TV',
-  'Valmer Insider Launch',
-  'Title Toolbox Promotion',
-  'Content Day / Headshots',
+  'Product / Service Launch',
+  'Event Promotion',
+  'Seasonal / Holiday',
+  'Testimonial Spotlight',
+  'Giveaway / Contest',
+  'Behind the Scenes Series',
+  'Milestone / Anniversary',
+  'Partner Collaboration',
+  'Community Initiative',
+  'New Offer / Promotion',
 ]

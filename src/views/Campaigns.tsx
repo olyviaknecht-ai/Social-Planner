@@ -8,17 +8,23 @@ import Thumbnail from '../components/Thumbnail'
 import PostEditor from '../components/PostEditor'
 import { cls } from '../lib/ui'
 
-// Map each campaign stage to a pillar + suggested copy direction.
-const STAGE_PILLAR: Record<string, string> = {
-  Tease: 'people',
-  'Explain value': 'growth',
-  'Show proof': 'proof',
-  'Show people/faces': 'people',
-  'Invite/register': 'events',
-  Reminder: 'events',
-  'Last call': 'events',
-  Recap: 'proof',
-  'Follow-up/resource': 'tools',
+// Keywords per campaign stage — matched against THIS brand's pillar titles so
+// campaigns use whatever pillars the brand actually has.
+const STAGE_KEYWORDS: Record<string, string[]> = {
+  Tease: ['people', 'face', 'team', 'behind'],
+  'Explain value': ['education', 'tip', 'value', 'growth', 'tool', 'service'],
+  'Show proof': ['proof', 'review', 'testimonial', 'result'],
+  'Show people/faces': ['people', 'face', 'team'],
+  'Invite/register': ['event', 'offer', 'launch'],
+  Reminder: ['event', 'offer'],
+  'Last call': ['event', 'offer'],
+  Recap: ['proof', 'review', 'community', 'event'],
+  'Follow-up/resource': ['education', 'tip', 'tool', 'value'],
+}
+function stagePillarId(stage: string, pillars: { id: string; title: string }[]): string | undefined {
+  const keys = STAGE_KEYWORDS[stage] || []
+  const match = pillars.find((p) => keys.some((k) => p.title.toLowerCase().includes(k)))
+  return (match || pillars[0])?.id
 }
 
 export default function Campaigns() {
@@ -42,7 +48,7 @@ export default function Campaigns() {
     c.beats.forEach((beat, i) => {
       if (beat.postId) return
       const date = format(addDays(new Date(c.startDate), Math.round(step * i)), 'yyyy-MM-dd')
-      const pillarId = STAGE_PILLAR[beat.stage] || 'events'
+      const pillarId = stagePillarId(beat.stage, pillars)
       const asset = assets.find((a) => beat.assetIds.includes(a.id))
       const id = addPost({
         scheduledDate: date,
@@ -123,7 +129,7 @@ export default function Campaigns() {
 
               <div className="space-y-2">
                 {campaign.beats.map((beat, i) => {
-                  const pillar = pillars.find((p) => p.id === STAGE_PILLAR[beat.stage])
+                  const pillar = pillars.find((p) => p.id === stagePillarId(beat.stage, pillars))
                   const beatAssets = assets.filter((a) => beat.assetIds.includes(a.id))
                   const post = posts.find((p) => p.id === beat.postId)
                   return (
