@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
   AIConfig,
+  Brand,
   Campaign,
   ContentAsset,
   ContentPillar,
@@ -21,7 +22,45 @@ function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+// ---- Per-brand content buckets ----
+// The flat top-level state (assets, pillars, posts…) is always the ACTIVE brand's
+// content. Other brands' content lives in their own localStorage keys and is
+// swapped in on switch. This keeps every screen working unchanged.
+const DEFAULT_FOLDERS: Folder[] = [
+  { id: 'f-events', name: 'Events' },
+  { id: 'f-headshots', name: 'Headshots' },
+  { id: 'f-team', name: 'Team' },
+  { id: 'f-community', name: 'Community' },
+]
+const freshMeta = (): MetaConfig => ({ appId: '', configId: '', pageId: '', pageToken: '', pageName: '', igUserId: '' })
+const BRAND_KEY = (id: string) => `valmer-brand-${id}`
+
+interface Bucket {
+  assets: ContentAsset[]
+  pillars: ContentPillar[]
+  campaigns: Campaign[]
+  posts: ScheduledPost[]
+  weeks: StorylineWeek[]
+  people: PersonMemory[]
+  folders: Folder[]
+  metaConfig: MetaConfig
+}
+function bucketFrom(s: Bucket): Bucket {
+  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig }
+}
+function saveBucket(id: string, s: Bucket) {
+  try { localStorage.setItem(BRAND_KEY(id), JSON.stringify(bucketFrom(s))) } catch { /* quota */ }
+}
+function loadBucket(id: string): Bucket | null {
+  try { const r = localStorage.getItem(BRAND_KEY(id)); return r ? JSON.parse(r) : null } catch { return null }
+}
+function freshBucket(): Bucket {
+  return { assets: [], pillars: SEED_PILLARS, campaigns: [], posts: [], weeks: buildStoryline(), people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta() }
+}
+
 interface State {
+  brands: Brand[]
+  activeBrandId: string
   assets: ContentAsset[]
   pillars: ContentPillar[]
   campaigns: Campaign[]
@@ -31,6 +70,11 @@ interface State {
   folders: Folder[]
   aiConfig: AIConfig
   metaConfig: MetaConfig
+
+  addBrand: (name: string) => string
+  switchBrand: (id: string) => void
+  renameBrand: (id: string, name: string) => void
+  removeBrand: (id: string) => void
 
   addFolder: (name: string) => string
   renameFolder: (id: string, name: string) => void
@@ -77,20 +121,48 @@ interface State {
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
+      brands: [{ id: 'brand-1', name: 'Valmer Land Title' }],
+      activeBrandId: 'brand-1',
       assets: [],
       pillars: SEED_PILLARS,
       campaigns: [],
       posts: [],
       weeks: buildStoryline(),
       people: [],
-      folders: [
-        { id: 'f-events', name: 'Events' },
-        { id: 'f-headshots', name: 'Headshots' },
-        { id: 'f-team', name: 'Team' },
-        { id: 'f-community', name: 'Community' },
-      ],
+      folders: DEFAULT_FOLDERS.map((f) => ({ ...f })),
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
-      metaConfig: { appId: '', configId: '', pageId: '', pageToken: '', pageName: '', igUserId: '' },
+      metaConfig: freshMeta(),
+
+      addBrand: (name) => {
+        const s = get()
+        saveBucket(s.activeBrandId, s)
+        const id = uid('brand')
+        const b = freshBucket()
+        saveBucket(id, b)
+        set({ brands: [...s.brands, { id, name: name.trim() || 'New brand' }], activeBrandId: id, ...b })
+        return id
+      },
+      switchBrand: (id) => {
+        const s = get()
+        if (id === s.activeBrandId) return
+        saveBucket(s.activeBrandId, s)
+        const b = loadBucket(id) || freshBucket()
+        set({ activeBrandId: id, ...b })
+      },
+      renameBrand: (id, name) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) })),
+      removeBrand: (id) => {
+        const s = get()
+        if (s.brands.length <= 1) return
+        try { localStorage.removeItem(BRAND_KEY(id)) } catch { /* ignore */ }
+        const remaining = s.brands.filter((b) => b.id !== id)
+        if (id === s.activeBrandId) {
+          const next = remaining[0]
+          const b = loadBucket(next.id) || freshBucket()
+          set({ brands: remaining, activeBrandId: next.id, ...b })
+        } else {
+          set({ brands: remaining })
+        }
+      },
 
       addFolder: (name) => {
         const id = uid('folder')
@@ -415,6 +487,8 @@ export const useStore = create<State>()(
     {
       name: 'valmer-storyboard',
       partialize: (s) => ({
+        brands: s.brands,
+        activeBrandId: s.activeBrandId,
         assets: s.assets,
         pillars: s.pillars,
         campaigns: s.campaigns,
@@ -429,6 +503,9 @@ export const useStore = create<State>()(
       // defaults instead of being dropped by the default shallow merge.
       merge: (persisted, current) => {
         const p = (persisted || {}) as Partial<State>
+        // Existing single-workspace users: fold their content into a first brand.
+        const brands = p.brands && p.brands.length ? p.brands : [{ id: 'brand-1', name: 'Valmer Land Title' }]
+        const activeBrandId = p.activeBrandId && brands.some((b) => b.id === p.activeBrandId) ? p.activeBrandId : brands[0].id
         // Refresh default pillar colors to the new palette, but only where the user
         // hasn't customized them (i.e. the stored color is the old default).
         const OLD: Record<string, string> = {
@@ -442,6 +519,8 @@ export const useStore = create<State>()(
         return {
           ...current,
           ...p,
+          brands,
+          activeBrandId,
           pillars,
           aiConfig: { ...current.aiConfig, ...(p.aiConfig || {}) },
           metaConfig: { ...current.metaConfig, ...(p.metaConfig || {}) },

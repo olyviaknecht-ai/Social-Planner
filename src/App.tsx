@@ -6,6 +6,7 @@ import { aiReady } from './engine/ai'
 import { metaReady } from './engine/meta'
 import AISettings from './components/AISettings'
 import MetaSettings from './components/MetaSettings'
+import BrandSwitcher from './components/BrandSwitcher'
 import { cls } from './lib/ui'
 import Library from './views/Library'
 import PillarBoard from './views/PillarBoard'
@@ -37,15 +38,13 @@ export default function App() {
   return (
     <div className="flex h-full">
       <aside className="w-64 shrink-0 flex flex-col text-white" style={{ background: 'linear-gradient(165deg, #6366f1 0%, #a855f7 45%, #ec4899 100%)' }}>
-        <div className="px-5 pt-6 pb-5 border-b border-white/15">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 font-serif text-sm font-semibold backdrop-blur">V</span>
-            <div>
-              <div className="font-serif text-lg leading-none">Valmer</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Content Storyboard</div>
-            </div>
+        <div className="px-4 pt-5 pb-4 border-b border-white/15">
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 font-serif text-xs font-semibold backdrop-blur">V</span>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Content Storyboard</div>
           </div>
-          <div className="mt-4 text-sm text-white/60">{greeting}, <span className="text-white/90">Olyvia</span></div>
+          <BrandSwitcher />
+          <div className="mt-3 px-1 text-sm text-white/60">{greeting}, <span className="text-white/90">Olyvia</span></div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map((n) => (

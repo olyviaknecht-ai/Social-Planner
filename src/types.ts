@@ -141,6 +141,12 @@ export interface ScheduledPost {
   phase: number // 1-4
 }
 
+// A brand / client the user creates content for. Each brand has its own content.
+export interface Brand {
+  id: string
+  name: string
+}
+
 // A user-made folder to organize the content library (e.g. Events, Headshots).
 export interface Folder {
   id: string
