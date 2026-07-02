@@ -12,8 +12,10 @@ import Thumbnail from './Thumbnail'
 import Lightbox from './Lightbox'
 
 export default function PostEditor({ postId, onClose }: { postId: string; onClose: () => void }) {
-  const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
+  const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, brands, activeBrandId, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
     useStore()
+  const activeBrand = brands.find((b) => b.id === activeBrandId)
+  const brandCtx = activeBrand ? { name: activeBrand.name, brief: activeBrand.brief } : undefined
   const post = posts.find((p) => p.id === postId)
   const [assetPicker, setAssetPicker] = useState(false)
   const [guidance, setGuidance] = useState(post?.promptNotes || '')
@@ -30,7 +32,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
   const set = (patch: Partial<ScheduledPost>) => updatePost(post.id, patch)
   const isEmail = post.platforms.includes('email')
   const useAI = aiReady(aiConfig)
-  const aiCtx = { asset: primaryAsset, pillar, people, carousel: post.format === 'carousel' || post.assetIds.length > 1 }
+  const aiCtx = { asset: primaryAsset, pillar, people, brand: brandCtx, carousel: post.format === 'carousel' || post.assetIds.length > 1 }
 
   async function runAI(work: Promise<CaptionResult>, extra?: Partial<ScheduledPost>) {
     setAiBusy(true)
@@ -70,7 +72,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
         setAiBusy(true)
         setAiErr(null)
         try {
-          const e = await aiGenerateEmail(aiConfig, { asset: primaryAsset, pillar, people, guidance: post.promptNotes })
+          const e = await aiGenerateEmail(aiConfig, { asset: primaryAsset, pillar, people, guidance: post.promptNotes, brand: brandCtx })
           set({ platforms: Array.from(new Set([...post.platforms, 'email'])) as Platform[], emailSubject: e.subject, emailPreview: e.preview, emailBody: e.body })
         } catch (err: any) {
           setAiErr(err?.message || 'AI request failed.')

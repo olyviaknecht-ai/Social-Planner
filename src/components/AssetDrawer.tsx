@@ -10,7 +10,8 @@ import Thumbnail from './Thumbnail'
 import { PillarBadge } from './Badges'
 
 export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId: string; onClose: () => void; onOpenPost: (id: string) => void }) {
-  const { assets, pillars, campaigns, folders, people, aiConfig, updateAsset, removeAsset, reanalyzeAsset, addPost } = useStore()
+  const { assets, pillars, campaigns, folders, people, aiConfig, brands, activeBrandId, updateAsset, removeAsset, reanalyzeAsset, addPost } = useStore()
+  const activeBrand = brands.find((b) => b.id === activeBrandId)
   const asset = assets.find((a) => a.id === assetId)
   const [busy, setBusy] = useState(false)
   if (!asset) return null
@@ -27,7 +28,7 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
     let gen = generateCaption(asset, pillar, { people })
     if (useAI) {
       try {
-        gen = await aiGenerateCaption(aiConfig, { asset, pillar, people })
+        gen = await aiGenerateCaption(aiConfig, { asset, pillar, people, brand: activeBrand ? { name: activeBrand.name, brief: activeBrand.brief } : undefined })
       } catch {
         // fall back to built-in writer on any AI failure
       }

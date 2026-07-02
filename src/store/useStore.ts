@@ -54,8 +54,10 @@ function saveBucket(id: string, s: Bucket) {
 function loadBucket(id: string): Bucket | null {
   try { const r = localStorage.getItem(BRAND_KEY(id)); return r ? JSON.parse(r) : null } catch { return null }
 }
+// A brand-new brand is a blank slate — no pillars or storyline carry over.
+// Onboarding (ChatGPT) builds the pillars; "Generate plan" builds the storyline.
 function freshBucket(): Bucket {
-  return { assets: [], pillars: SEED_PILLARS, campaigns: [], posts: [], weeks: buildStoryline(), people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta() }
+  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta() }
 }
 
 interface State {
@@ -74,7 +76,9 @@ interface State {
   addBrand: (name: string) => string
   switchBrand: (id: string) => void
   renameBrand: (id: string, name: string) => void
+  updateBrand: (id: string, patch: Partial<Brand>) => void
   removeBrand: (id: string) => void
+  setPillars: (pillars: ContentPillar[]) => void
 
   addFolder: (name: string) => string
   renameFolder: (id: string, name: string) => void
@@ -150,6 +154,8 @@ export const useStore = create<State>()(
         set({ activeBrandId: id, ...b })
       },
       renameBrand: (id, name) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) })),
+      updateBrand: (id, patch) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, ...patch } : b)) })),
+      setPillars: (pillars) => set({ pillars }),
       removeBrand: (id) => {
         const s = get()
         if (s.brands.length <= 1) return

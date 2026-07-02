@@ -7,6 +7,7 @@ import { metaReady } from './engine/meta'
 import AISettings from './components/AISettings'
 import MetaSettings from './components/MetaSettings'
 import BrandSwitcher from './components/BrandSwitcher'
+import BrandOnboarding from './components/BrandOnboarding'
 import { cls } from './lib/ui'
 import Library from './views/Library'
 import PillarBoard from './views/PillarBoard'
@@ -25,12 +26,14 @@ const NAV = [
 ]
 
 export default function App() {
-  const { posts, pillars, assets, aiConfig, metaConfig, generatePlan, resetAll } = useStore()
+  const { posts, pillars, assets, aiConfig, metaConfig, activeBrandId, generatePlan, resetAll } = useStore()
   const strategy = useMemo(() => analyzeStrategy(posts, pillars, assets), [posts, pillars, assets])
   const [aiOpen, setAiOpen] = useState(false)
   const [metaOpen, setMetaOpen] = useState(false)
+  const [onboardDismissed, setOnboardDismissed] = useState<string | null>(null)
   const aiOn = aiReady(aiConfig)
   const metaOn = metaReady(metaConfig)
+  const needsOnboarding = pillars.length === 0 && onboardDismissed !== activeBrandId
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
@@ -129,6 +132,7 @@ export default function App() {
 
       {aiOpen && <AISettings onClose={() => setAiOpen(false)} />}
       {metaOpen && <MetaSettings onClose={() => setMetaOpen(false)} />}
+      {needsOnboarding && <BrandOnboarding onClose={() => setOnboardDismissed(activeBrandId)} onOpenAI={() => setAiOpen(true)} />}
     </div>
   )
 }

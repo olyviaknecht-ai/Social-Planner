@@ -145,6 +145,7 @@ export interface ScheduledPost {
 export interface Brand {
   id: string
   name: string
+  brief?: string // AI-built brand voice + positioning summary, used to steer captions
 }
 
 // A user-made folder to organize the content library (e.g. Events, Headshots).
