@@ -55,6 +55,15 @@ app.use(
     target: 'https://api.openai.com',
     changeOrigin: true,
     pathRewrite: { '^/openai-proxy': '' },
+    // The browser sends the OpenAI key as X-Api-Key (Authorization is used by the
+    // login gate). Swap it into Authorization before forwarding to OpenAI.
+    onProxyReq: (proxyReq) => {
+      const key = proxyReq.getHeader('x-api-key')
+      if (key) {
+        proxyReq.setHeader('authorization', `Bearer ${key}`)
+        proxyReq.removeHeader('x-api-key')
+      }
+    },
   }),
 )
 

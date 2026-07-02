@@ -112,7 +112,7 @@ async function callOpenAI(cfg: AIConfig, messages: { role: string; content: stri
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${cfg.apiKey.trim()}`,
+      'X-Api-Key': cfg.apiKey.trim(),
     },
     body: JSON.stringify({
       model: cfg.model || 'gpt-4o-mini',
@@ -178,7 +178,7 @@ export async function aiGenerateEmail(
   const user = `Write a short marketing email for the content below.\n${platformGuide('email')}\n\n${describe(opts)}\n\nRespond with ONLY a JSON object: {"subject": string, "preview": string, "body": string}. The subject is under 9 words, the preview is one short line, the body is a warm short email ending with "${signoff}".`
   const res = await fetch(OPENAI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey.trim()}` },
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': cfg.apiKey.trim() },
     body: JSON.stringify({ model: cfg.model || 'gpt-4o-mini', messages: [{ role: 'system', content: systemPrompt(opts.brand) }, { role: 'user', content: user }], temperature: 0.8, response_format: { type: 'json_object' } }),
   })
   if (!res.ok) throw new Error(res.status === 401 ? 'OpenAI rejected the API key (401).' : `OpenAI error ${res.status}`)
@@ -223,7 +223,7 @@ Respond with ONLY a JSON object:
   description of what goes in it, a one-line goal, and "share" (a fraction of how often to post it). Shares sum to ~1.0.`
   const res = await fetch(OPENAI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey.trim()}` },
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': cfg.apiKey.trim() },
     body: JSON.stringify({ model: cfg.model || 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are a sharp brand strategist who designs focused, non-generic social content pillars.' }, { role: 'user', content: user }], temperature: 0.7, response_format: { type: 'json_object' } }),
   })
   if (!res.ok) throw new Error(res.status === 401 ? 'OpenAI rejected the API key (401).' : res.status === 429 ? 'OpenAI rate limit or no credit (429).' : `OpenAI error ${res.status}`)

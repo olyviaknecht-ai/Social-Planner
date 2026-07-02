@@ -15,6 +15,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
         rewrite: (p) => p.replace(/^\/openai-proxy/, ''),
+        // Move the OpenAI key from X-Api-Key into Authorization so it never collides
+        // with the site's Basic Auth login header.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            const key = proxyReq.getHeader('x-api-key')
+            if (key) {
+              proxyReq.setHeader('authorization', `Bearer ${key}`)
+              proxyReq.removeHeader('x-api-key')
+            }
+          })
+        },
       },
       // Meta Graph API (Facebook publishing). Same-origin proxy avoids CORS.
       '/meta-proxy': {
