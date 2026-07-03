@@ -9,6 +9,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import authRouter from './server/auth.js'
 import brandsRouter from './server/brands.js'
+import { initDb } from './server/db.js'
 
 // Load a local, gitignored .env if present (Node 20.12+). On a host like Render,
 // these come from the dashboard environment instead.
@@ -65,6 +66,11 @@ app.use(express.static(dist))
 // SPA fallback (the app uses hash routing, but this keeps the root + any path working).
 app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')))
 
-app.listen(PORT, () => {
-  console.log(`Valmer Content Storyboard running on port ${PORT}`)
-})
+initDb()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Valmer Content Storyboard running on port ${PORT}`))
+  })
+  .catch((e) => {
+    console.error('Database init failed:', e)
+    process.exit(1)
+  })
