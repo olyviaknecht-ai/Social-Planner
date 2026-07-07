@@ -30,9 +30,10 @@ export default function AssetCard({
   const strength = strengthOf(asset)
   const sMeta = STRENGTH_META[strength]
   const eventOrCampaign = campaignLabel || asset.event.trim()
+  const used = asset.status === 'posted'
 
   return (
-    <div className={cls('card relative flex flex-col overflow-hidden transition-shadow hover:shadow-md', selected && 'ring-2 ring-valmer-sage', strength === 'archive' && 'opacity-60')}>
+    <div className={cls('card relative flex flex-col overflow-hidden transition-shadow hover:shadow-md', selected && 'ring-2 ring-valmer-sage', (strength === 'archive' || used) && 'opacity-60')}>
       <button
         onClick={(e) => { e.stopPropagation(); onToggle() }}
         className={cls('absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-md border text-xs shadow-sm', selected ? 'border-valmer-sage bg-valmer-sage text-white' : 'border-black/20 bg-white/90 text-transparent hover:text-valmer-slate/40')}
@@ -40,7 +41,7 @@ export default function AssetCard({
       >
         ✓
       </button>
-      <span className={cls('absolute right-2 top-2 z-10 chip text-[10px]', sMeta.cls)}>{sMeta.label}</span>
+      <span className={cls('absolute right-2 top-2 z-10 chip text-[10px]', used ? 'bg-emerald-600 text-white' : sMeta.cls)}>{used ? '✓ Used' : sMeta.label}</span>
 
       <button onClick={onOpen} className="block text-left">
         <Thumbnail asset={asset} className="aspect-[4/3] w-full" />

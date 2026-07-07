@@ -51,10 +51,13 @@ export default function Library() {
   const filterDef = FILTERS.find((f) => f.id === filter) || FILTERS[0]
   const inFolder = (a: ContentAsset) => folderFilter === 'all' || (folderFilter === 'none' ? !a.folderId : a.folderId === folderFilter)
   const filtered = useMemo(
-    () =>
-      assets
+    () => {
+      // Used photos sink to the very bottom, then archived, then strongest first.
+      const rank = (a: ContentAsset) => (a.status === 'posted' ? 2 : strengthOf(a) === 'archive' ? 1 : 0)
+      return assets
         .filter((a) => inFolder(a) && filterDef.test(a, { posts }))
-        .sort((a, b) => STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt)),
+        .sort((a, b) => rank(a) - rank(b) || STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt))
+    },
     [assets, filterDef, posts, folderFilter],
   )
 

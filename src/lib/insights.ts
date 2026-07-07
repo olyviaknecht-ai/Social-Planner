@@ -113,6 +113,7 @@ export const FILTERS: FilterDef[] = [
   { id: 'needs-caption', label: 'Needs caption', test: (a, c) => needsCaption(a, c.posts) },
   { id: 'scheduled', label: 'Scheduled', test: (a, c) => displayStatus(a, c.posts) === 'scheduled' },
   { id: 'posted', label: 'Posted', test: (a, c) => displayStatus(a, c.posts) === 'posted' },
+  { id: 'used', label: 'Used', test: (a) => a.status === 'posted' },
   { id: 'event', label: 'Event content', test: (a) => !!a.event.trim() || a.analysis?.contentType === 'event' },
   { id: 'faces', label: 'Team / faces', test: (a) => !!a.people.trim() || a.selectedPillarId === 'people' || a.analysis?.contentType === 'team' || a.analysis?.contentType === 'headshot' },
   { id: 'agent-value', label: 'Agent value', test: (a) => a.selectedPillarId === 'growth' || a.selectedPillarId === 'tools' || a.analysis?.contentType === 'tool' },
