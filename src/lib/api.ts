@@ -39,9 +39,10 @@ export const api = {
   logout: () => req('/api/logout', { method: 'POST' }),
   listBrands: () => req('/api/brands') as Promise<{ brands: ApiBrand[] }>,
   createBrand: (name: string, content: unknown) => req('/api/brands', { method: 'POST', body: JSON.stringify({ name, content }) }) as Promise<{ id: string; name: string }>,
-  getBrand: (id: string) => req(`/api/brands/${id}`) as Promise<{ id: string; name: string; content: string; role: string; updatedAt: string; members: { email: string; name: string; role: string }[] }>,
+  getBrand: (id: string) => req(`/api/brands/${id}`) as Promise<{ id: string; name: string; content: string; role: string; updatedAt: string; members: { email: string; name: string; role: string }[]; invites: { email: string; role: string }[] }>,
   saveBrand: (id: string, content: unknown, summary: string, name?: string) => req(`/api/brands/${id}`, { method: 'PUT', body: JSON.stringify({ content, summary, name }) }),
   deleteBrand: (id: string) => req(`/api/brands/${id}`, { method: 'DELETE' }),
   shareBrand: (id: string, email: string, role: string) => req(`/api/brands/${id}/share`, { method: 'POST', body: JSON.stringify({ email, role }) }) as Promise<{ status: string; email: string; role: string }>,
+  unshareBrand: (id: string, email: string) => req(`/api/brands/${id}/unshare`, { method: 'POST', body: JSON.stringify({ email }) }),
   activity: (id: string) => req(`/api/brands/${id}/activity`) as Promise<{ activity: { at: string; summary: string; name: string; email: string }[] }>,
 }

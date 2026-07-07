@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function ShareBrand({ onClose }: { onClose: () => void }) {
-  const { brands, activeBrandId, members, role, shareActiveBrand, loadActivity } = useStore()
+  const { brands, activeBrandId, members, invites, role, shareActiveBrand, removeAccess, loadActivity } = useStore()
   const active = brands.find((b) => b.id === activeBrandId)
   const [email, setEmail] = useState('')
   const [shareRole, setShareRole] = useState('editor')
@@ -63,9 +63,25 @@ export default function ShareBrand({ onClose }: { onClose: () => void }) {
             <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-valmer-slate/50">People with access</div>
             <div className="space-y-1">
               {members.map((m) => (
-                <div key={m.email} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm">
-                  <span>{m.name || m.email}</span>
-                  <span className="chip bg-black/5 text-[10px] capitalize text-valmer-slate/60">{m.role}</span>
+                <div key={m.email} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate">{m.name || m.email}{m.name && <span className="text-valmer-slate/40"> · {m.email}</span>}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="chip bg-black/5 text-[10px] capitalize text-valmer-slate/60">{m.role}</span>
+                    {role === 'owner' && m.role !== 'owner' && (
+                      <button onClick={() => { if (confirm(`Remove ${m.email} from this brand?`)) removeAccess(m.email) }} className="text-valmer-slate/40 hover:text-rose-500" title="Remove access">✕</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {invites.map((iv) => (
+                <div key={iv.email} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate text-valmer-slate/70">{iv.email}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="chip bg-amber-100 text-[10px] text-amber-700">invite pending</span>
+                    {role === 'owner' && (
+                      <button onClick={() => removeAccess(iv.email)} className="text-valmer-slate/40 hover:text-rose-500" title="Cancel invite">✕</button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

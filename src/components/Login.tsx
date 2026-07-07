@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
+import Logo from './Logo'
 
 export default function Login() {
   const { login, signup, authError } = useStore()
@@ -25,9 +26,9 @@ export default function Login() {
   return (
     <div className="flex min-h-full w-full items-center justify-center p-6" style={{ background: 'linear-gradient(165deg, #6366f1 0%, #a855f7 45%, #ec4899 100%)' }}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-2xl animate-fadeup">
-        <div className="mb-1 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-valmer-clay font-serif text-sm font-semibold text-white">V</span>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-valmer-slate/50">Content Storyboard</div>
+        <div className="mb-2 flex items-center gap-2">
+          <Logo size={30} />
+          <div className="font-serif text-base text-valmer-ink">Content Storyboard</div>
         </div>
         <h1 className="mb-5 font-serif text-2xl text-valmer-ink">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
 

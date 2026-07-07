@@ -70,6 +70,7 @@ interface State {
   authError: string | null
   role: string // my role on the active brand
   members: { email: string; name: string; role: string }[]
+  invites: { email: string; role: string }[]
 
   brands: Brand[]
   activeBrandId: string
@@ -92,6 +93,7 @@ interface State {
   loadBrands: () => Promise<void>
   openBrand: (id: string) => Promise<void>
   shareActiveBrand: (email: string, role: string) => Promise<{ status: string; email: string }>
+  removeAccess: (email: string) => Promise<void>
   loadActivity: () => Promise<{ at: string; summary: string; name: string; email: string }[]>
 
   addBrand: (name: string) => Promise<void>
@@ -152,6 +154,7 @@ export const useStore = create<State>()(
       authError: null,
       role: 'owner',
       members: [],
+      invites: [],
       brands: [],
       activeBrandId: '',
       assets: [],
@@ -225,15 +228,20 @@ export const useStore = create<State>()(
           const parsed = data.content ? JSON.parse(data.content) : null
           if (parsed && typeof parsed === 'object') bucket = { ...bucket, ...parsed }
         } catch { /* keep fresh */ }
-        set({ activeBrandId: id, role: data.role, members: data.members || [], ...bucket })
+        set({ activeBrandId: id, role: data.role, members: data.members || [], invites: data.invites || [], ...bucket })
         markSaved(JSON.stringify(bucketFrom(get())))
       },
 
       shareActiveBrand: async (email, role) => {
         const res = await api.shareBrand(get().activeBrandId, email, role)
         const data = await api.getBrand(get().activeBrandId).catch(() => null)
-        if (data) set({ members: data.members || [] })
+        if (data) set({ members: data.members || [], invites: data.invites || [] })
         return res
+      },
+      removeAccess: async (email) => {
+        await api.unshareBrand(get().activeBrandId, email)
+        const data = await api.getBrand(get().activeBrandId).catch(() => null)
+        if (data) set({ members: data.members || [], invites: data.invites || [] })
       },
       loadActivity: async () => (await api.activity(get().activeBrandId)).activity,
 

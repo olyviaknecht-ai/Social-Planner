@@ -9,6 +9,7 @@ import MetaSettings from './components/MetaSettings'
 import BrandSwitcher from './components/BrandSwitcher'
 import BrandOnboarding from './components/BrandOnboarding'
 import Login from './components/Login'
+import Logo from './components/Logo'
 import { cls } from './lib/ui'
 import Library from './views/Library'
 import PillarBoard from './views/PillarBoard'
@@ -43,17 +44,18 @@ export default function App() {
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const firstName = (user?.name || '').trim().split(' ')[0]
 
   return (
     <div className="flex h-full">
       <aside className="w-64 shrink-0 flex flex-col text-white" style={{ background: 'linear-gradient(165deg, #6366f1 0%, #a855f7 45%, #ec4899 100%)' }}>
         <div className="px-4 pt-5 pb-4 border-b border-white/15">
           <div className="mb-3 flex items-center gap-2 px-1">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 font-serif text-xs font-semibold backdrop-blur">V</span>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-white/45">Content Storyboard</div>
+            <Logo size={26} />
+            <div className="font-serif text-sm text-white">Content Storyboard</div>
           </div>
           <BrandSwitcher />
-          <div className="mt-3 px-1 text-sm text-white/60">{greeting}, <span className="text-white/90">Olyvia</span></div>
+          {firstName && <div className="mt-3 px-1 text-sm text-white/60">{greeting}, <span className="text-white/90">{firstName}</span></div>}
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map((n) => (

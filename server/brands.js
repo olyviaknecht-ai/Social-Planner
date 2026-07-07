@@ -38,7 +38,8 @@ router.get('/:id', async (req, res) => {
   const b = await db.get('SELECT * FROM brands WHERE id=?', [req.params.id])
   if (!b) return res.status(404).json({ error: 'Brand not found' })
   const members = await db.all('SELECT u.email, u.name, m.role FROM brand_members m JOIN users u ON u.id=m.user_id WHERE m.brand_id=?', [req.params.id])
-  res.json({ id: b.id, name: b.name, content: b.content, role: m.role, updatedAt: b.updated_at, members })
+  const invites = await db.all('SELECT email, role FROM invites WHERE brand_id=?', [req.params.id])
+  res.json({ id: b.id, name: b.name, content: b.content, role: m.role, updatedAt: b.updated_at, members, invites })
 })
 
 router.put('/:id', async (req, res) => {
@@ -66,6 +67,17 @@ router.post('/:id/share', async (req, res) => {
     await db.run('INSERT INTO invites (email, brand_id, role, created_at) VALUES (?,?,?,?) ON CONFLICT (email, brand_id) DO UPDATE SET role=excluded.role', [email, req.params.id, role, nowISO()])
     res.json({ status: 'invited', email, role })
   }
+})
+
+router.post('/:id/unshare', async (req, res) => {
+  const m = await membership(req.params.id, req.user.id)
+  if (!m || m.role !== 'owner') return res.status(403).json({ error: 'Only the owner can change access' })
+  const email = String(req.body?.email || '').toLowerCase().trim()
+  if (!email) return res.status(400).json({ error: 'Email required' })
+  await db.run('DELETE FROM invites WHERE brand_id=? AND email=?', [req.params.id, email])
+  const u = await db.get('SELECT id FROM users WHERE email=?', [email])
+  if (u) await db.run("DELETE FROM brand_members WHERE brand_id=? AND user_id=? AND role<>'owner'", [req.params.id, u.id])
+  res.json({ ok: true })
 })
 
 router.delete('/:id', async (req, res) => {
