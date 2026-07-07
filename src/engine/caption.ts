@@ -189,6 +189,8 @@ export function platformVersion(caption: string, platform: Platform, asset: Cont
     }
     case 'reels':
       return sanitizeVoice(caption.split('\n').slice(0, 2).join('\n'))
+    case 'youtube':
+      return sanitizeVoice(`${firstLine}\n\n${caption}`)
     case 'email':
       return caption
     default:

@@ -17,6 +17,7 @@ export const PLATFORM_STYLES: Record<Platform, string> = {
   reels: 'bg-fuchsia-100 text-fuchsia-700',
   facebook: 'bg-blue-100 text-blue-700',
   tiktok: 'bg-slate-200 text-slate-800',
+  youtube: 'bg-red-100 text-red-700',
   email: 'bg-amber-100 text-amber-800',
 }
 

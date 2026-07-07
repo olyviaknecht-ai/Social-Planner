@@ -692,7 +692,7 @@ function suggestedPillarsFor(a: ContentAsset): string[] {
 }
 
 function suggestedPlatformsFor(a: ContentAsset): ContentAsset['suggestedPlatforms'] {
-  if (a.fileType === 'video') return ['reels', 'tiktok', 'facebook']
+  if (a.fileType === 'video') return ['reels', 'tiktok', 'youtube', 'facebook']
   const t = a.analysis?.contentType
   if (t === 'testimonial' || t === 'event') return ['instagram', 'facebook', 'email']
   return ['instagram', 'facebook']

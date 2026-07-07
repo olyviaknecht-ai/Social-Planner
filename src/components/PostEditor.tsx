@@ -280,7 +280,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <span className="text-xs text-valmer-slate/50 self-center">Write version:</span>
-              {(['instagram', 'facebook', 'tiktok', 'email'] as Platform[]).map((pl) => (
+              {(['instagram', 'facebook', 'tiktok', 'youtube', 'email'] as Platform[]).map((pl) => (
                 <button key={pl} onClick={() => writeVersion(pl)} disabled={aiBusy} className="chip bg-valmer-sage/15 text-valmer-sage disabled:opacity-50">
                   {PLATFORMS.find((p) => p.id === pl)?.short}
                 </button>

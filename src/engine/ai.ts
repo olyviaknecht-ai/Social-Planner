@@ -72,6 +72,8 @@ function platformGuide(platform?: Platform): string {
       return 'Platform: TikTok. Short, punchy, casual. One strong line plus a couple of casual hashtags.'
     case 'reels':
       return 'Platform: Instagram Reels. Very short, 1 to 2 lines, energetic.'
+    case 'youtube':
+      return 'Platform: YouTube. Write a title (under 70 chars) and a short description with a hook in the first line. Good for longer video or Shorts.'
     case 'email':
       return 'Platform: Email. Write it as a short email body with a greeting and sign-off from "The Valmer Team". hashtags should be empty.'
     default:

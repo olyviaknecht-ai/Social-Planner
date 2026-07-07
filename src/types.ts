@@ -1,10 +1,11 @@
-export type Platform = 'instagram' | 'reels' | 'facebook' | 'tiktok' | 'email'
+export type Platform = 'instagram' | 'reels' | 'facebook' | 'tiktok' | 'youtube' | 'email'
 
 export const PLATFORMS: { id: Platform; label: string; short: string }[] = [
   { id: 'instagram', label: 'Instagram Feed', short: 'IG' },
   { id: 'reels', label: 'Instagram Reels', short: 'Reel' },
   { id: 'facebook', label: 'Facebook', short: 'FB' },
   { id: 'tiktok', label: 'TikTok', short: 'TT' },
+  { id: 'youtube', label: 'YouTube', short: 'YT' },
   { id: 'email', label: 'Email', short: 'Email' },
 ]
 

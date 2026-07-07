@@ -7,6 +7,7 @@ import { generateCaption } from '../engine/caption'
 import { aiGenerateCaption, aiReady } from '../engine/ai'
 import { cls } from '../lib/ui'
 import Thumbnail from './Thumbnail'
+import Lightbox from './Lightbox'
 import { PillarBadge } from './Badges'
 
 export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId: string; onClose: () => void; onOpenPost: (id: string) => void }) {
@@ -14,6 +15,7 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
   const activeBrand = brands.find((b) => b.id === activeBrandId)
   const asset = assets.find((a) => a.id === assetId)
   const [busy, setBusy] = useState(false)
+  const [lightbox, setLightbox] = useState(false)
   if (!asset) return null
   const set = (patch: Partial<typeof asset>) => updateAsset(asset.id, patch)
   const analysis = asset.analysis
@@ -60,7 +62,12 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
 
         <div className="space-y-5 p-5">
           <div className="flex gap-4">
-            <Thumbnail asset={asset} className="h-32 w-32 shrink-0 rounded-xl" />
+            <button onClick={() => setLightbox(true)} className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-xl" title={asset.fileType === 'video' ? 'Play' : 'Enlarge'}>
+              <Thumbnail asset={asset} className="h-32 w-32" />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+                <span className="text-2xl">{asset.fileType === 'video' ? '▶' : '⤢'}</span>
+              </span>
+            </button>
             <div className="flex-1 space-y-2">
               <input value={asset.title} onChange={(e) => set({ title: e.target.value })} className="input font-medium" />
               <div className="flex items-center gap-2">
@@ -210,6 +217,8 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
           </div>
         </div>
       </div>
+
+      {lightbox && <Lightbox asset={asset} onClose={() => setLightbox(false)} />}
     </div>
   )
 }
