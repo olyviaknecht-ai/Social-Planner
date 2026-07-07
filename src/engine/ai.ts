@@ -56,11 +56,9 @@ function systemPrompt(brand?: BrandContext): string {
 }
 
 const OUTPUT = `Respond with ONLY a JSON object, no markdown, with exactly these keys:
-{"hook": string, "caption": string, "cta": string, "hashtags": string}
-- "hook": a short scroll-stopping first line (under 8 words).
-- "caption": the full post body. Do NOT include hashtags in the caption body.
-- "cta": one clear, low-pressure next step.
-- "hashtags": 3 to 6 relevant hashtags separated by spaces, or an empty string for email.`
+{"caption": string, "cta": string}
+- "caption": the complete, copy-paste-ready post. Open with a scroll-stopping first line, then the body, and weave a natural call to action into the ending. Do NOT include any hashtags.
+- "cta": just the call-to-action phrase (a few words), for internal tracking only.`
 
 function platformGuide(platform?: Platform): string {
   switch (platform) {
@@ -145,10 +143,10 @@ async function callOpenAI(cfg: AIConfig, messages: { role: string; content: stri
     throw new Error('Could not parse the AI response.')
   }
   return {
-    hook: sanitizeVoice(String(parsed.hook || '')),
+    hook: '',
     caption: sanitizeVoice(String(parsed.caption || '')),
     cta: sanitizeVoice(String(parsed.cta || '')),
-    hashtags: String(parsed.hashtags || '').trim(),
+    hashtags: '',
   }
 }
 

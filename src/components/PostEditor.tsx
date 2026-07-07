@@ -269,8 +269,10 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
               </div>
             </div>
             {aiErr && <div className="mb-2 rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">{aiErr}</div>}
-            <input value={post.hook} onChange={(e) => set({ hook: e.target.value })} placeholder="Hook" className="input mb-2 font-medium" />
-            <textarea value={post.caption} onChange={(e) => set({ caption: e.target.value })} rows={6} className="input mb-2" placeholder="Write the caption that answers: why does this matter?" />
+            <textarea value={post.caption} onChange={(e) => set({ caption: e.target.value })} rows={9} className="input mb-1" placeholder="Your full caption, ready to copy and paste." />
+            <div className="mb-2 flex justify-end">
+              <button onClick={() => navigator.clipboard.writeText(post.caption)} className="text-xs text-valmer-sage hover:underline">Copy caption</button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {CAPTION_CONTROLS.map((c) => (
                 <button key={c.id} onClick={() => runControl(c.id)} disabled={aiBusy} className="chip border border-black/10 text-valmer-slate hover:bg-black/5 disabled:opacity-50">
@@ -311,14 +313,6 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">CTA</label>
-              <input value={post.cta} onChange={(e) => set({ cta: e.target.value })} className="input" />
-            </div>
-            <div>
-              <label className="label">Hashtags (optional)</label>
-              <input value={post.hashtags} onChange={(e) => set({ hashtags: e.target.value })} className="input" />
-            </div>
             <div>
               <label className="label">Alt text (optional)</label>
               <input value={post.altText} onChange={(e) => set({ altText: e.target.value })} className="input" />

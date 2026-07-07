@@ -153,12 +153,13 @@ export function generateCaption(asset: ContentAsset, pillar?: ContentPillar, opt
   const lead = c.guidance && !body.toLowerCase().includes(c.guidance.toLowerCase()) ? `${ensureSentence(c.guidance)} ` : ''
   const carouselNote = c.carousel ? '\n\nSwipe through.' : ''
 
-  const caption = sanitizeVoice(`${lead}${body}${carouselNote}\n\n${c.cta}`)
+  // One complete, copy-paste-ready caption: hook line, body, then the CTA. No hashtags.
+  const caption = sanitizeVoice(`${HOOK[c.type]}\n\n${lead}${body}${carouselNote}\n\n${c.cta}`)
   return {
     caption,
     hook: HOOK[c.type],
     cta: sanitizeVoice(c.cta),
-    hashtags: hashtagsFor(c.type),
+    hashtags: '',
   }
 }
 
