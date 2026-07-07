@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ContentAsset, ContentPillar } from '../types'
 import { cls, STATUS_STYLES } from '../lib/ui'
-import { STRENGTH_META, displayStatus, recommendedActions, strengthOf, suggestedUse } from '../lib/insights'
+import { STRENGTH_META, displayStatus, recommendedActions, strengthOf } from '../lib/insights'
 import type { AssetActionId } from '../lib/insights'
 import Thumbnail from './Thumbnail'
 import { PillarBadge, PlatformBadge } from './Badges'
@@ -66,8 +66,6 @@ export default function AssetCard({
             <span className="text-valmer-slate/40">{campaignLabel ? 'Campaign:' : 'Event:'}</span> {eventOrCampaign}
           </div>
         )}
-
-        <div className="text-[11px] italic text-valmer-clay">{suggestedUse(asset)}</div>
 
         <div className="relative mt-auto pt-1">
           <button onClick={() => setMenu((v) => !v)} className="btn-outline w-full py-1 text-xs">Next action ▾</button>
