@@ -42,36 +42,38 @@ export const STRENGTH_META: Record<AssetStrength, { label: string; cls: string }
 }
 
 // ---- Suggested use (one short line) ----
-export function suggestedUse(asset: ContentAsset): string {
+// pillarTitle, when provided, makes the suggestion use the brand's own pillar name.
+export function suggestedUse(asset: ContentAsset, pillarTitle?: string): string {
   const a = asset.analysis
-  if (!a) return 'Use as a supporting post.'
+  const inPillar = pillarTitle ? `Lead a ${pillarTitle} post.` : 'Use as a supporting post.'
+  if (!a) return inPillar
   const strength = strengthOf(asset)
   if (strength === 'needs-context') return 'Add a note, then it can lead a post.'
   if (strength === 'story') return 'Best as a quick story moment.'
   if (strength === 'archive') return 'Set aside for later.'
   switch (a.contentType) {
     case 'testimonial':
-      return 'Lead a proof post or email quote.'
+      return 'Lead a proof post or pull a quote.'
     case 'event':
       return 'Anchor an event recap carousel.'
     case 'team':
-      return 'Feature as a People of Valmer post.'
+      return pillarTitle ? `Feature in a ${pillarTitle} post.` : 'Feature your people.'
     case 'behind-the-scenes':
       return 'Build familiarity, pair into a carousel.'
     case 'community':
       return 'Show local presence, tag the partner.'
     case 'tool':
-      return 'Explain the agent benefit, then the tool.'
+      return 'Lead with the benefit, then the tool.'
     case 'podcast':
       return 'Cut a Reel from the best line.'
     case 'headshot':
-      return 'Use for branding or a content-day promo.'
+      return 'Use for branding or a promo.'
     case 'short-clip':
       return 'Turn into a Reel and a TikTok.'
     case 'graphic':
       return 'Save-worthy tip post.'
     default:
-      return 'Use as a supporting post.'
+      return inPillar
   }
 }
 

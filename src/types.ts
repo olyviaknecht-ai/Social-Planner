@@ -83,6 +83,7 @@ export interface ContentAsset {
   captionIdea: string
   status: AssetStatus
   strength?: AssetStrength // user override; otherwise derived from analysis
+  useNote?: string // editable "suggested use" line; falls back to the computed suggestion
   analysis?: AssetAnalysis
 }
 

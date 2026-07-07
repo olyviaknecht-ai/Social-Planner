@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { ContentAsset, ContentPillar } from '../types'
 import { cls, STATUS_STYLES } from '../lib/ui'
-import { STRENGTH_META, displayStatus, recommendedActions, strengthOf } from '../lib/insights'
+import { useStore } from '../store/useStore'
+import { STRENGTH_META, displayStatus, recommendedActions, strengthOf, suggestedUse } from '../lib/insights'
 import type { AssetActionId } from '../lib/insights'
 import Thumbnail from './Thumbnail'
 import { PillarBadge, PlatformBadge } from './Badges'
@@ -25,6 +26,7 @@ export default function AssetCard({
   onOpen: () => void
   onAction: (id: AssetActionId) => void
 }) {
+  const updateAsset = useStore((s) => s.updateAsset)
   const [menu, setMenu] = useState(false)
   const status = displayStatus(asset, posts)
   const strength = strengthOf(asset)
@@ -66,6 +68,17 @@ export default function AssetCard({
             <span className="text-valmer-slate/40">{campaignLabel ? 'Campaign:' : 'Event:'}</span> {eventOrCampaign}
           </div>
         )}
+
+        <div className="flex items-baseline gap-1 text-[11px]">
+          <span className="shrink-0 text-valmer-slate/40">Suggested:</span>
+          <input
+            value={asset.useNote !== undefined ? asset.useNote : suggestedUse(asset, pillar?.title)}
+            onChange={(e) => updateAsset(asset.id, { useNote: e.target.value })}
+            onClick={(e) => e.stopPropagation()}
+            title="Edit the suggestion"
+            className="min-w-0 flex-1 rounded px-1 italic text-valmer-clay outline-none transition-colors hover:bg-black/[0.04] focus:bg-white focus:ring-1 focus:ring-valmer-sage/30"
+          />
+        </div>
 
         <div className="relative mt-auto pt-1">
           <button onClick={() => setMenu((v) => !v)} className="btn-outline w-full py-1 text-xs">Next action ▾</button>
