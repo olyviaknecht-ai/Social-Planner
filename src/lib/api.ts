@@ -45,5 +45,7 @@ export const api = {
   deleteBrand: (id: string) => req(`/api/brands/${id}`, { method: 'DELETE' }),
   shareBrand: (id: string, email: string, role: string) => req(`/api/brands/${id}/share`, { method: 'POST', body: JSON.stringify({ email, role }) }) as Promise<{ status: string; email: string; role: string }>,
   unshareBrand: (id: string, email: string) => req(`/api/brands/${id}/unshare`, { method: 'POST', body: JSON.stringify({ email }) }),
+  createInviteLink: (id: string, role: string) => req(`/api/brands/${id}/invite-link`, { method: 'POST', body: JSON.stringify({ role }) }) as Promise<{ token: string; role: string }>,
+  acceptInvite: (token: string) => req(`/api/invite/${token}/accept`, { method: 'POST' }) as Promise<{ brandId: string }>,
   activity: (id: string) => req(`/api/brands/${id}/activity`) as Promise<{ activity: { at: string; summary: string; name: string; email: string }[] }>,
 }

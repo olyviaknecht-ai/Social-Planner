@@ -65,6 +65,9 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS invites (
       email TEXT, brand_id TEXT, role TEXT, created_at TEXT, PRIMARY KEY (email, brand_id)
     );
+    CREATE TABLE IF NOT EXISTS invite_links (
+      token TEXT PRIMARY KEY, brand_id TEXT, role TEXT, created_at TEXT
+    );
   `)
   await db.exec(`CREATE TABLE IF NOT EXISTS edits (id ${idCol}, brand_id TEXT, user_id TEXT, at TEXT, summary TEXT);`)
 }

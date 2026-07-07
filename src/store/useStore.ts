@@ -96,6 +96,7 @@ interface State {
   loadBrands: () => Promise<void>
   openBrand: (id: string) => Promise<void>
   shareActiveBrand: (email: string, role: string) => Promise<{ status: string; email: string }>
+  inviteLink: (role: string) => Promise<string>
   removeAccess: (email: string) => Promise<void>
   loadActivity: () => Promise<{ at: string; summary: string; name: string; email: string }[]>
 
@@ -178,7 +179,7 @@ export const useStore = create<State>()(
         try {
           const { user } = await api.me()
           set({ sessionStatus: 'in', user, authError: null })
-          await get().loadBrands()
+          await afterAuth(get)
         } catch {
           set({ sessionStatus: 'out', user: null })
         }
@@ -188,7 +189,7 @@ export const useStore = create<State>()(
         try {
           const { user } = await api.login(email, password)
           set({ sessionStatus: 'in', user })
-          await get().loadBrands()
+          await afterAuth(get)
         } catch (e: any) {
           set({ authError: e?.message || 'Login failed' })
           throw e
@@ -199,7 +200,7 @@ export const useStore = create<State>()(
         try {
           const { user } = await api.signup(email, password, name)
           set({ sessionStatus: 'in', user })
-          await get().loadBrands()
+          await afterAuth(get)
         } catch (e: any) {
           set({ authError: e?.message || 'Sign up failed' })
           throw e
@@ -242,6 +243,10 @@ export const useStore = create<State>()(
         const data = await api.getBrand(get().activeBrandId).catch(() => null)
         if (data) set({ members: data.members || [], invites: data.invites || [] })
         return res
+      },
+      inviteLink: async (role) => {
+        const { token } = await api.createInviteLink(get().activeBrandId, role)
+        return `${window.location.origin}/#/join/${token}`
       },
       removeAccess: async (email) => {
         await api.unshareBrand(get().activeBrandId, email)
@@ -659,6 +664,29 @@ function localImportBucket(): { name: string; bucket: Bucket } | null {
   } catch {
     return null
   }
+}
+
+// If the app was opened from an invite link (#/join/<token>), stash the token and
+// clean the URL so the router doesn't choke on it.
+try {
+  const m = window.location.hash.match(/#\/join\/([a-z0-9]+)/i)
+  if (m) {
+    localStorage.setItem('pendingJoin', m[1])
+    window.location.hash = '#/calendar'
+  }
+} catch { /* ignore */ }
+
+// After any successful auth: claim a pending invite, then load brands (opening the
+// just-joined brand if there was one).
+async function afterAuth(get: () => State) {
+  let joined: string | null = null
+  const token = localStorage.getItem('pendingJoin')
+  if (token) {
+    try { joined = (await api.acceptInvite(token)).brandId } catch { /* invalid/expired */ }
+    localStorage.removeItem('pendingJoin')
+  }
+  await get().loadBrands()
+  if (joined) await get().openBrand(joined)
 }
 
 // Kick off session check on load.

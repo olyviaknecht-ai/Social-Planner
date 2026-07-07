@@ -32,6 +32,10 @@ export default function Login() {
         </div>
         <h1 className="mb-5 font-serif text-2xl text-valmer-ink">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
 
+        {typeof localStorage !== 'undefined' && localStorage.getItem('pendingJoin') && (
+          <div className="mb-4 rounded-lg bg-valmer-clay/10 px-3 py-2 text-sm text-valmer-clay">You've been invited to a brand. Sign up or log in to join it.</div>
+        )}
+
         <form onSubmit={submit} className="space-y-3">
           {mode === 'signup' && (
             <div>

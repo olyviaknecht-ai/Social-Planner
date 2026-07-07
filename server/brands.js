@@ -69,6 +69,20 @@ router.post('/:id/share', async (req, res) => {
   }
 })
 
+// Create (or reuse) a shareable invite link for this brand.
+router.post('/:id/invite-link', async (req, res) => {
+  const m = await membership(req.params.id, req.user.id)
+  if (!m || m.role !== 'owner') return res.status(403).json({ error: 'Only the owner can create an invite link' })
+  const role = req.body?.role === 'viewer' ? 'viewer' : 'editor'
+  let row = await db.get('SELECT token FROM invite_links WHERE brand_id=? AND role=?', [req.params.id, role])
+  let token = row?.token
+  if (!token) {
+    token = crypto.randomUUID().replace(/-/g, '')
+    await db.run('INSERT INTO invite_links (token, brand_id, role, created_at) VALUES (?,?,?,?)', [token, req.params.id, role, nowISO()])
+  }
+  res.json({ token, role })
+})
+
 router.post('/:id/rename', async (req, res) => {
   const m = await membership(req.params.id, req.user.id)
   if (!m || m.role === 'viewer') return res.status(403).json({ error: 'You cannot rename this brand' })

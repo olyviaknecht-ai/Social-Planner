@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function ShareBrand({ onClose }: { onClose: () => void }) {
-  const { brands, activeBrandId, members, invites, role, shareActiveBrand, removeAccess, loadActivity } = useStore()
+  const { brands, activeBrandId, members, invites, role, shareActiveBrand, inviteLink, removeAccess, loadActivity } = useStore()
+  const [linkCopied, setLinkCopied] = useState(false)
   const active = brands.find((b) => b.id === activeBrandId)
   const [email, setEmail] = useState('')
   const [shareRole, setShareRole] = useState('editor')
@@ -45,8 +46,27 @@ export default function ShareBrand({ onClose }: { onClose: () => void }) {
           {role !== 'owner' ? (
             <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Only the brand owner can invite people.</div>
           ) : (
+            <>
             <div>
-              <label className="label">Invite by email</label>
+              <label className="label">Share a link</label>
+              <p className="-mt-0.5 mb-2 text-[11px] text-valmer-slate/55">Anyone who opens this link and signs up joins the brand as an editor.</p>
+              <button
+                onClick={async () => {
+                  try {
+                    const link = await inviteLink('editor')
+                    await navigator.clipboard.writeText(link)
+                    setLinkCopied(true)
+                    setTimeout(() => setLinkCopied(false), 2000)
+                  } catch { setMsg('Could not create the link.') }
+                }}
+                className="btn-primary w-full"
+              >
+                {linkCopied ? '✓ Link copied — paste it to them' : 'Copy invite link'}
+              </button>
+            </div>
+
+            <div>
+              <label className="label">Or invite by email</label>
               <div className="flex gap-2">
                 <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teammate@email.com" className="input" type="email" />
                 <select value={shareRole} onChange={(e) => setShareRole(e.target.value)} className="input w-28">
@@ -57,6 +77,7 @@ export default function ShareBrand({ onClose }: { onClose: () => void }) {
               </div>
               {msg && <div className="mt-2 rounded-lg bg-valmer-sage/15 px-3 py-2 text-sm text-valmer-sage">{msg}</div>}
             </div>
+            </>
           )}
 
           <div>

@@ -9,6 +9,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import authRouter from './server/auth.js'
 import brandsRouter from './server/brands.js'
+import inviteRouter from './server/invite.js'
 import { initDb } from './server/db.js'
 
 // Load a local, gitignored .env if present (Node 20.12+). On a host like Render,
@@ -60,6 +61,7 @@ app.use(
 app.use('/api', express.json({ limit: '20mb' }))
 app.use('/api', authRouter)
 app.use('/api/brands', brandsRouter)
+app.use('/api/invite', inviteRouter)
 
 const dist = path.join(__dirname, 'dist')
 app.use(express.static(dist))
