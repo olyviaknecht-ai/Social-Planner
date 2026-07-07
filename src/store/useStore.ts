@@ -255,7 +255,10 @@ export const useStore = create<State>()(
         await flushSave()
         await get().openBrand(id)
       },
-      renameBrand: (id, name) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) })),
+      renameBrand: (id, name) => {
+        set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) }))
+        api.renameBrand(id, name).catch(() => {})
+      },
       updateBrand: (id, patch) => set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, ...patch } : b)) })),
       setPillars: (pillars) => set({ pillars }),
       removeBrand: async (id) => {
@@ -620,7 +623,7 @@ async function flushSave() {
   if (snap === lastSaved) return
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
   lastSaved = snap
-  try { await api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited', s.brands.find((b) => b.id === s.activeBrandId)?.name) } catch { /* offline */ }
+  try { await api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited') } catch { /* offline */ }
 }
 
 useStore.subscribe((s) => {
@@ -630,7 +633,7 @@ useStore.subscribe((s) => {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     lastSaved = snap
-    api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited', s.brands.find((b) => b.id === s.activeBrandId)?.name).catch(() => {})
+    api.saveBrand(s.activeBrandId, JSON.parse(snap), 'edited').catch(() => {})
   }, 1000)
 })
 

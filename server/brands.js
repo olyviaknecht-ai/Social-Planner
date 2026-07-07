@@ -69,6 +69,16 @@ router.post('/:id/share', async (req, res) => {
   }
 })
 
+router.post('/:id/rename', async (req, res) => {
+  const m = await membership(req.params.id, req.user.id)
+  if (!m || m.role === 'viewer') return res.status(403).json({ error: 'You cannot rename this brand' })
+  const name = String(req.body?.name || '').trim().slice(0, 120)
+  if (!name) return res.status(400).json({ error: 'Name required' })
+  await db.run('UPDATE brands SET name=?, updated_at=?, updated_by=? WHERE id=?', [name, nowISO(), req.user.id, req.params.id])
+  await db.run('INSERT INTO edits (brand_id, user_id, at, summary) VALUES (?,?,?,?)', [req.params.id, req.user.id, nowISO(), `renamed to "${name}"`])
+  res.json({ ok: true })
+})
+
 router.post('/:id/unshare', async (req, res) => {
   const m = await membership(req.params.id, req.user.id)
   if (!m || m.role !== 'owner') return res.status(403).json({ error: 'Only the owner can change access' })
