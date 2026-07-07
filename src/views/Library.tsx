@@ -160,9 +160,18 @@ export default function Library() {
             </button>
           )
         })}
-        {filtered.length > 0 && (
-          <button onClick={() => setSelected(new Set(filtered.map((a) => a.id)))} className="ml-auto text-xs text-valmer-slate/60 underline hover:text-valmer-slate">Select all</button>
-        )}
+        {filtered.length > 0 && (() => {
+          const allSelected = filtered.every((a) => selected.has(a.id))
+          return (
+            <button
+              onClick={() => setSelected(allSelected ? new Set() : new Set(filtered.map((a) => a.id)))}
+              className="ml-auto chip border border-valmer-slate/30 text-valmer-slate hover:bg-valmer-slate hover:text-white"
+            >
+              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-current text-[9px]">{allSelected ? '✓' : ''}</span>
+              {allSelected ? 'Deselect all' : `Select all ${filtered.length}`}
+            </button>
+          )
+        })()}
       </div>
 
       {toast && <div className="mb-3 rounded-lg bg-valmer-sage/15 px-3 py-2 text-sm text-valmer-sage">{toast}</div>}
