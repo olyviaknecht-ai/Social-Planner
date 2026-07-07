@@ -49,7 +49,7 @@ body {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .input {
-    @apply w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none transition-shadow focus:border-valmer-sage focus:ring-2 focus:ring-valmer-sage/25;
+    @apply w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm text-valmer-ink outline-none transition-shadow placeholder:text-valmer-slate/40 focus:border-valmer-sage focus:ring-2 focus:ring-valmer-sage/25;
   }
   .label {
     @apply block text-xs font-semibold uppercase tracking-wide text-valmer-slate/70 mb-1;
