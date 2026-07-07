@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { cls } from '../lib/ui'
 import ShareBrand from './ShareBrand'
+import BrandVoice from './BrandVoice'
 
 export default function BrandSwitcher() {
   const { brands, activeBrandId, switchBrand, addBrand, renameBrand, removeBrand } = useStore()
   const [open, setOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
   const active = brands.find((b) => b.id === activeBrandId) || brands[0]
 
   return (
@@ -52,6 +54,12 @@ export default function BrandSwitcher() {
               </div>
             ))}
             <button
+              onClick={() => { setVoiceOpen(true); setOpen(false) }}
+              className="block w-full border-t border-black/5 px-4 py-2.5 text-left text-sm text-valmer-slate hover:bg-black/5"
+            >
+              Brand voice
+            </button>
+            <button
               onClick={() => { setShareOpen(true); setOpen(false) }}
               className="block w-full border-t border-black/5 px-4 py-2.5 text-left text-sm text-valmer-slate hover:bg-black/5"
             >
@@ -68,6 +76,7 @@ export default function BrandSwitcher() {
       )}
 
       {shareOpen && <ShareBrand onClose={() => setShareOpen(false)} />}
+      {voiceOpen && <BrandVoice onClose={() => setVoiceOpen(false)} />}
     </div>
   )
 }

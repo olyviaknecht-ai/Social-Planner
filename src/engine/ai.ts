@@ -24,6 +24,7 @@ const OPENAI_URL = '/openai-proxy/v1/chat/completions'
 export interface BrandContext {
   name: string
   brief?: string
+  voice?: string // pasted examples of the brand's real past posts
 }
 
 // Universal copywriting rules applied to every brand.
@@ -48,7 +49,10 @@ function systemPrompt(brand?: BrandContext): string {
   const intro = brand?.brief
     ? `You are the social media strategist and copywriter for ${brand.name}.\nBrand context: ${brand.brief}`
     : `You are the social media strategist and copywriter for ${brand?.name || 'Valmer Land Title, a title company whose audience is real estate agents'}.`
-  return `${intro}\n\n${RULES}`
+  const voice = brand?.voice?.trim()
+    ? `\n\nHere are real past posts from this brand. Study them and match this exact voice, tone, rhythm, and vocabulary:\n"""\n${brand.voice.trim().slice(0, 4000)}\n"""`
+    : ''
+  return `${intro}${voice}\n\n${RULES}`
 }
 
 const OUTPUT = `Respond with ONLY a JSON object, no markdown, with exactly these keys:

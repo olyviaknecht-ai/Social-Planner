@@ -16,7 +16,7 @@ import PeopleManager from '../components/PeopleManager'
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
 export default function Library() {
-  const { assets, pillars, posts, people, campaigns, folders, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, createCarouselPost } = useStore()
+  const { assets, pillars, posts, people, campaigns, folders, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
@@ -225,7 +225,8 @@ export default function Library() {
           <button onClick={batchCarousel} disabled={selected.size < 2} className="btn-outline py-1.5 text-xs disabled:opacity-40">Create carousel</button>
           <button onClick={batchSchedule} className="btn-outline py-1.5 text-xs">Schedule</button>
           <button onClick={() => { updateAssets(ids, { status: 'posted' }); flash('Marked as used'); clear() }} className="btn-outline py-1.5 text-xs">Mark used</button>
-          <button onClick={() => { updateAssets(ids, { strength: 'archive', status: 'unusable' }); flash('Archived'); clear() }} className="btn py-1.5 text-xs text-rose-600 hover:bg-rose-50">Archive</button>
+          <button onClick={() => { updateAssets(ids, { strength: 'archive', status: 'unusable' }); flash('Archived'); clear() }} className="btn-outline py-1.5 text-xs">Archive</button>
+          <button onClick={() => { if (confirm(`Delete ${ids.length} photo${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) { removeAssets(ids); flash('Deleted'); clear() } }} className="btn py-1.5 text-xs text-rose-600 hover:bg-rose-50">Delete</button>
           <button onClick={clear} className="btn-ghost py-1.5 text-xs">Clear</button>
         </div>
       )}

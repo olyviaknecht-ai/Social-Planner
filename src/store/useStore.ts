@@ -47,9 +47,10 @@ interface Bucket {
   folders: Folder[]
   metaConfig: MetaConfig
   brief: string
+  voice: string
 }
 function bucketFrom(s: Bucket): Bucket {
-  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig, brief: s.brief }
+  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig, brief: s.brief, voice: s.voice }
 }
 function saveBucket(id: string, s: Bucket) {
   try { localStorage.setItem(BRAND_KEY(id), JSON.stringify(bucketFrom(s))) } catch { /* quota */ }
@@ -60,7 +61,7 @@ function loadBucket(id: string): Bucket | null {
 // A brand-new brand is a blank slate — no pillars or storyline carry over.
 // Onboarding (ChatGPT) builds the pillars; "Generate plan" builds the storyline.
 function freshBucket(): Bucket {
-  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta(), brief: '' }
+  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta(), brief: '', voice: '' }
 }
 
 interface State {
@@ -82,10 +83,12 @@ interface State {
   people: PersonMemory[]
   folders: Folder[]
   brief: string
+  voice: string
   aiConfig: AIConfig
   metaConfig: MetaConfig
 
   setBrief: (brief: string) => void
+  setVoice: (voice: string) => void
   initSession: () => Promise<void>
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
@@ -165,10 +168,12 @@ export const useStore = create<State>()(
       people: [],
       folders: DEFAULT_FOLDERS.map((f) => ({ ...f })),
       brief: '',
+      voice: '',
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
       metaConfig: freshMeta(),
 
       setBrief: (brief) => set({ brief }),
+      setVoice: (voice) => set({ voice }),
       initSession: async () => {
         try {
           const { user } = await api.me()
@@ -646,7 +651,7 @@ function localImportBucket(): { name: string; bucket: Bucket } | null {
     if (!st || !st.assets) return null
     const bucket: Bucket = {
       assets: st.assets || [], pillars: st.pillars || [], campaigns: st.campaigns || [], posts: st.posts || [],
-      weeks: st.weeks || [], people: st.people || [], folders: st.folders || DEFAULT_FOLDERS, metaConfig: st.metaConfig || freshMeta(), brief: st.brief || '',
+      weeks: st.weeks || [], people: st.people || [], folders: st.folders || DEFAULT_FOLDERS, metaConfig: st.metaConfig || freshMeta(), brief: st.brief || '', voice: st.voice || '',
     }
     if (!bucket.assets.length && !bucket.pillars.length && !bucket.posts.length) return null
     const name = (st.brands && st.brands.find((b: Brand) => b.id === st.activeBrandId)?.name) || 'My Brand'
