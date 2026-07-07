@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { useStore } from '../store/useStore'
+import { loadBlob } from '../store/blobs'
 import type { ScheduledPost } from '../types'
 import { cls } from '../lib/ui'
 import { exportCsv, exportIcs, copyWeekCaptions } from '../lib/export'
@@ -77,6 +78,24 @@ export default function Calendar() {
   }
 
   const dragPost = posts.find((p) => p.id === dragId)
+
+  // Download the actual photo/video files attached to a post.
+  const downloadPost = async (post: ScheduledPost) => {
+    const list = assets.filter((a) => post.assetIds.includes(a.id))
+    for (const asset of list) {
+      const blob = await loadBlob(asset.id)
+      if (!blob) continue
+      const ext = (blob.type.split('/')[1] || '').split(';')[0] || (asset.fileType === 'video' ? 'mp4' : 'jpg')
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(asset.title || 'content').replace(/[^\w.-]+/g, '_')}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    }
+  }
 
   return (
     <div className="p-6">
@@ -145,6 +164,7 @@ export default function Calendar() {
                     onOpen={setOpenPost}
                     onDuplicate={(p) => addPost({ ...p, id: undefined as any, title: p.title + ' (copy)' })}
                     onDelete={removePost}
+                    onDownload={downloadPost}
                   />
                 )
               })}
@@ -185,6 +205,7 @@ function DayCell({
   onOpen,
   onDuplicate,
   onDelete,
+  onDownload,
 }: {
   date: string
   posts: ScheduledPost[]
@@ -196,6 +217,7 @@ function DayCell({
   onOpen: (id: string) => void
   onDuplicate: (p: ScheduledPost) => void
   onDelete: (id: string) => void
+  onDownload: (p: ScheduledPost) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: date })
   const dayNum = date.slice(8)
@@ -218,14 +240,14 @@ function DayCell({
         {posts.map((p) => {
           const pillar = pillars.find((x) => x.id === p.pillarId)
           const asset = assets.find((a) => p.assetIds.includes(a.id))
-          return <PostCard key={p.id} post={p} pillar={pillar} asset={asset} onOpen={() => onOpen(p.id)} onDuplicate={() => onDuplicate(p)} onDelete={() => onDelete(p.id)} />
+          return <PostCard key={p.id} post={p} pillar={pillar} asset={asset} onOpen={() => onOpen(p.id)} onDuplicate={() => onDuplicate(p)} onDelete={() => onDelete(p.id)} onDownload={() => onDownload(p)} />
         })}
       </div>
     </div>
   )
 }
 
-function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete }: { post: ScheduledPost; pillar: any; asset: any; onOpen: () => void; onDuplicate: () => void; onDelete: () => void }) {
+function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete, onDownload }: { post: ScheduledPost; pillar: any; asset: any; onOpen: () => void; onDuplicate: () => void; onDelete: () => void; onDownload: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: post.id })
   const isCarousel = post.format === 'carousel' || post.assetIds.length > 1
   return (
@@ -251,6 +273,7 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete }: { post
       </div>
       <div className="flex items-center justify-between border-t border-black/5 px-1.5 py-1">
         <button onClick={onOpen} className="text-[10px] text-valmer-sage hover:underline">edit</button>
+        {asset && <button onClick={onDownload} className="text-[10px] text-valmer-slate/40 hover:text-valmer-slate" title="Download photo/video">↓</button>}
         <button onClick={onDuplicate} className="text-[10px] text-valmer-slate/40 hover:text-valmer-slate">dup</button>
         <button onClick={onDelete} className="text-[10px] text-valmer-slate/40 hover:text-rose-500" title="Delete post">del</button>
         <StatusBadge status={post.status} />
