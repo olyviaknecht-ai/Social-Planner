@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3'
 import pg from 'pg'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -6,7 +5,9 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Use Postgres when DATABASE_URL is set (e.g. Render's free Postgres); otherwise
-// fall back to a local SQLite file. Same async API either way.
+// fall back to a local SQLite file. better-sqlite3 is an optional dependency and
+// is only loaded in the SQLite path, so a missing/failed native build can never
+// break a Postgres deploy.
 const usePg = !!process.env.DATABASE_URL
 let pool
 let sdb
@@ -14,6 +15,7 @@ let sdb
 if (usePg) {
   pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
 } else {
+  const { default: Database } = await import('better-sqlite3')
   const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data.db')
   sdb = new Database(DB_PATH)
   sdb.pragma('journal_mode = WAL')
