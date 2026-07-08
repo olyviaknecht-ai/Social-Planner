@@ -83,9 +83,9 @@ export default function Calendar() {
   const downloadPost = async (post: ScheduledPost) => {
     const list = assets.filter((a) => post.assetIds.includes(a.id))
     for (const asset of list) {
-      // Drive files: open the full-quality original in Google Drive.
+      // Drive files: pull the full-quality original straight from Google Drive.
       if (asset.driveId) {
-        window.open(`https://drive.google.com/file/d/${asset.driveId}/view`, '_blank')
+        window.open(`https://drive.google.com/uc?export=download&id=${asset.driveId}`, '_blank')
         continue
       }
       const blob = await loadBlob(asset.id)
@@ -263,7 +263,16 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete, onDownlo
     >
       <div {...attributes} {...listeners} onClick={onOpen} className="cursor-pointer p-1.5 active:cursor-grabbing" title="Click to view details">
         <div className="flex gap-1.5">
-          {asset && <Thumbnail asset={asset} className="h-8 w-8 shrink-0 rounded" />}
+          {asset && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDownload() }}
+              className="group/dl relative h-8 w-8 shrink-0 overflow-hidden rounded"
+              title="Download full quality"
+            >
+              <Thumbnail asset={asset} className="h-8 w-8" />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover/dl:bg-black/45 group-hover/dl:opacity-100">↓</span>
+            </button>
+          )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-[11px] font-medium leading-tight text-valmer-ink">{post.title}</div>
             <div className="mt-0.5 flex flex-wrap gap-0.5">
