@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, format } from 'date-fns'
 import { useStore } from '../store/useStore'
 import { saveBlob } from '../store/blobs'
@@ -17,7 +17,7 @@ import DriveConnect from '../components/DriveConnect'
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
 export default function Library() {
-  const { assets, pillars, posts, people, campaigns, folders, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost } = useStore()
+  const { assets, pillars, posts, people, campaigns, folders, driveFolderId, syncDrive, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
@@ -32,6 +32,16 @@ export default function Library() {
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200) }
   const campaignName = (id?: string) => campaigns.find((c) => c.id === id)?.title
+
+  // Auto-sync a connected Google Drive folder: on open, then every 90s.
+  useEffect(() => {
+    if (!driveFolderId) return
+    let alive = true
+    const run = () => syncDrive().then((r) => { if (alive && r.added) flash(`${r.added} new from Google Drive`) }).catch(() => {})
+    run()
+    const t = setInterval(run, 90000)
+    return () => { alive = false; clearInterval(t) }
+  }, [driveFolderId])
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return

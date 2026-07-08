@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
-import { listDriveFolder, parseDriveFolderId } from '../lib/drive'
+import { parseDriveFolderId } from '../lib/drive'
 
 export default function DriveConnect({ onClose }: { onClose: () => void }) {
-  const { assets, driveFolderId, driveApiKey, setDrive, addAsset } = useStore()
+  const { driveFolderId, driveApiKey, setDrive, syncDrive } = useStore()
   const [apiKey, setApiKey] = useState(driveApiKey)
   const [folderLink, setFolderLink] = useState(driveFolderId ? `https://drive.google.com/drive/folders/${driveFolderId}` : '')
   const [busy, setBusy] = useState(false)
@@ -18,16 +18,9 @@ export default function DriveConnect({ onClose }: { onClose: () => void }) {
     setErr(null)
     setMsg(null)
     try {
-      const files = await listDriveFolder(apiKey, folderId)
       setDrive({ driveApiKey: apiKey.trim(), driveFolderId: folderId })
-      const existing = new Set(assets.map((a) => a.driveId).filter(Boolean))
-      let added = 0
-      for (const f of files) {
-        if (existing.has(f.id)) continue
-        addAsset({ fileType: f.mimeType.startsWith('video/') ? 'video' : 'photo', title: f.name.replace(/\.[^.]+$/, ''), driveId: f.id })
-        added++
-      }
-      setMsg(added ? `Imported ${added} new file${added > 1 ? 's' : ''} from Drive (${files.length} in the folder).` : `Already up to date. ${files.length} files in the folder.`)
+      const { added, total } = await syncDrive()
+      setMsg(added ? `Imported ${added} new file${added > 1 ? 's' : ''} from Drive (${total} in the folder).` : `Already up to date. ${total} files in the folder.`)
     } catch (e: any) {
       setErr(e?.message || 'Could not read the folder.')
     } finally {
@@ -72,7 +65,7 @@ export default function DriveConnect({ onClose }: { onClose: () => void }) {
               <li>APIs &amp; Services → Library → search <b>Google Drive API</b> → Enable.</li>
               <li>APIs &amp; Services → Credentials → Create credentials → <b>API key</b> → copy it here.</li>
               <li>In Google Drive, right-click your brand's folder → Share → General access → <b>Anyone with the link → Viewer</b> → copy the folder link here.</li>
-              <li>Click Import. New files added to that Drive folder appear when you hit Sync.</li>
+              <li>Click Import. After that, new files you add to the Drive folder show up automatically.</li>
             </ol>
             <p className="mt-2">Tip: in Credentials you can restrict the API key to just the Drive API for safety.</p>
           </details>

@@ -19,6 +19,7 @@ import { generateCaption, generateEmail } from '../engine/caption'
 import { removeBlob } from './blobs'
 import { api } from '../lib/api'
 import type { ApiUser } from '../lib/api'
+import { listDriveFolder } from '../lib/drive'
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -95,6 +96,7 @@ interface State {
   setBrief: (brief: string) => void
   setVoice: (voice: string) => void
   setDrive: (patch: { driveFolderId?: string; driveApiKey?: string }) => void
+  syncDrive: () => Promise<{ added: number; total: number }>
   initSession: () => Promise<void>
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
@@ -185,6 +187,19 @@ export const useStore = create<State>()(
       setBrief: (brief) => set({ brief }),
       setVoice: (voice) => set({ voice }),
       setDrive: (patch) => set(patch),
+      syncDrive: async () => {
+        const { driveApiKey, driveFolderId } = get()
+        if (!driveApiKey.trim() || !driveFolderId.trim()) return { added: 0, total: 0 }
+        const files = await listDriveFolder(driveApiKey, driveFolderId)
+        const existing = new Set(get().assets.map((a) => a.driveId).filter(Boolean))
+        let added = 0
+        for (const f of files) {
+          if (existing.has(f.id)) continue
+          get().addAsset({ fileType: f.mimeType.startsWith('video/') ? 'video' : 'photo', title: f.name.replace(/\.[^.]+$/, ''), driveId: f.id })
+          added++
+        }
+        return { added, total: files.length }
+      },
       initSession: async () => {
         try {
           const { user } = await api.me()
