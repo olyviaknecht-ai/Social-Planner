@@ -74,6 +74,7 @@ interface State {
   role: string // my role on the active brand
   members: { email: string; name: string; role: string }[]
   invites: { email: string; role: string }[]
+  brandLoading: boolean
 
   brands: Brand[]
   activeBrandId: string
@@ -164,6 +165,7 @@ export const useStore = create<State>()(
       role: 'owner',
       members: [],
       invites: [],
+      brandLoading: false,
       brands: [],
       activeBrandId: '',
       assets: [],
@@ -270,8 +272,15 @@ export const useStore = create<State>()(
       },
       switchBrand: async (id) => {
         if (id === get().activeBrandId) return
-        await flushSave()
-        await get().openBrand(id)
+        set({ brandLoading: true })
+        // Save the current brand in the background (snapshot is captured synchronously),
+        // so the switch only waits on loading the next brand, not uploading this one.
+        flushSave()
+        try {
+          await get().openBrand(id)
+        } finally {
+          set({ brandLoading: false })
+        }
       },
       renameBrand: (id, name) => {
         set((s) => ({ brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)) }))

@@ -5,7 +5,7 @@ import ShareBrand from './ShareBrand'
 import BrandVoice from './BrandVoice'
 
 export default function BrandSwitcher() {
-  const { brands, activeBrandId, switchBrand, addBrand, renameBrand, removeBrand } = useStore()
+  const { brands, activeBrandId, brandLoading, switchBrand, addBrand, renameBrand, removeBrand } = useStore()
   const [open, setOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
@@ -17,8 +17,8 @@ export default function BrandSwitcher() {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-white/10"
       >
-        <span className="truncate font-serif text-lg leading-tight text-white">{active?.name}</span>
-        <span className="text-white/60">▾</span>
+        <span className={cls('truncate font-serif text-lg leading-tight text-white', brandLoading && 'opacity-60')}>{active?.name}</span>
+        {brandLoading ? <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <span className="text-white/60">▾</span>}
       </button>
 
       {open && (
