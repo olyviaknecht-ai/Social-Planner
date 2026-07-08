@@ -7,6 +7,7 @@ import type { CaptionControl } from '../engine/caption'
 import { aiGenerateCaption, aiGenerateEmail, aiReady, aiTransformCaption } from '../engine/ai'
 import type { CaptionResult } from '../engine/ai'
 import { metaReady, publishFacebookPhoto, publishFacebookText } from '../engine/meta'
+import { loadBlob } from '../store/blobs'
 import { cls } from '../lib/ui'
 import Thumbnail from './Thumbnail'
 import Lightbox from './Lightbox'
@@ -92,6 +93,26 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
     set({ caption: platformVersion(src, pl, primaryAsset || ({} as any)) })
   }
 
+  const downloadMedia = async () => {
+    for (const a of postAssets) {
+      if (a.driveId) {
+        window.open(`https://drive.google.com/uc?export=download&id=${a.driveId}`, '_blank')
+        continue
+      }
+      const blob = await loadBlob(a.id)
+      if (!blob) continue
+      const ext = (blob.type.split('/')[1] || '').split(';')[0] || (a.fileType === 'video' ? 'mp4' : 'jpg')
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${(a.title || 'content').replace(/[^\w.-]+/g, '_')}.${ext}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    }
+  }
+
   const metaOn = metaReady(metaConfig)
   const publishToFacebook = async () => {
     const ok = window.confirm(
@@ -143,10 +164,15 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
         <div className="space-y-5 p-5">
           {/* big image preview */}
           {primaryAsset && (
-            <button onClick={() => setLightbox(primaryAsset.id)} className="group relative block w-full overflow-hidden rounded-xl" title="Click to enlarge">
-              <Thumbnail asset={primaryAsset} className="aspect-[16/10] w-full" />
-              <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">Click to enlarge</span>
-            </button>
+            <div>
+              <button onClick={() => setLightbox(primaryAsset.id)} className="group relative block w-full overflow-hidden rounded-xl" title="Click to enlarge">
+                <Thumbnail asset={primaryAsset} className="aspect-[16/10] w-full" />
+                <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">Click to enlarge</span>
+              </button>
+              <button onClick={downloadMedia} className="btn-outline mt-2 w-full">
+                ⬇ Download full quality{postAssets.length > 1 ? ` (${postAssets.length} files)` : ''}
+              </button>
+            </div>
           )}
 
           {/* meta row */}

@@ -266,11 +266,11 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete, onDownlo
           {asset && (
             <button
               onClick={(e) => { e.stopPropagation(); onDownload() }}
-              className="group/dl relative h-8 w-8 shrink-0 overflow-hidden rounded"
+              className="group/dl relative h-8 w-8 shrink-0 overflow-hidden rounded ring-1 ring-black/5"
               title="Download full quality"
             >
               <Thumbnail asset={asset} className="h-8 w-8" />
-              <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover/dl:bg-black/45 group-hover/dl:opacity-100">↓</span>
+              <span className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-tl bg-black/60 text-[9px] leading-none text-white group-hover/dl:bg-valmer-clay">↓</span>
             </button>
           )}
           <div className="min-w-0 flex-1">
