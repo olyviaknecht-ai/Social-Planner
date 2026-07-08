@@ -60,6 +60,7 @@ export interface ContentAsset {
   id: string
   fileUrl?: string // object URL (session) — blob persisted in IndexedDB
   thumbnailUrl?: string // data URL persisted
+  driveId?: string // Google Drive file id — original stays in Drive at full quality
   fileType: FileType
   uploadedAt: string
   title: string

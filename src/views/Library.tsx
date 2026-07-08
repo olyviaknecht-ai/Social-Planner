@@ -12,6 +12,7 @@ import AssetDrawer from '../components/AssetDrawer'
 import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
 import PeopleManager from '../components/PeopleManager'
+import DriveConnect from '../components/DriveConnect'
 
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
@@ -27,6 +28,7 @@ export default function Library() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [peopleOpen, setPeopleOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [driveOpen, setDriveOpen] = useState(false)
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200) }
   const campaignName = (id?: string) => campaigns.find((c) => c.id === id)?.title
@@ -113,6 +115,7 @@ export default function Library() {
         subtitle="What you have, what's strongest, and what to do with it next."
         action={
           <div className="flex gap-2">
+            <button onClick={() => setDriveOpen(true)} className="btn-outline">Google Drive</button>
             <button onClick={() => setGrouped((v) => !v)} className={cls('btn-outline', grouped && 'bg-valmer-slate text-white')}>
               {grouped ? 'Grid view' : 'Group by event'}
             </button>
@@ -237,6 +240,7 @@ export default function Library() {
       {openAsset && <AssetDrawer assetId={openAsset} onClose={() => setOpenAsset(null)} onOpenPost={(id) => { setOpenAsset(null); setOpenPost(id) }} />}
       {openPost && <PostEditor postId={openPost} onClose={() => setOpenPost(null)} />}
       {peopleOpen && <PeopleManager onClose={() => setPeopleOpen(false)} />}
+      {driveOpen && <DriveConnect onClose={() => setDriveOpen(false)} />}
     </div>
   )
 }

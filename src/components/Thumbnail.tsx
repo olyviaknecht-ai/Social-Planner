@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { ContentAsset } from '../types'
 import { loadBlobUrl } from '../store/blobs'
+import { driveThumb } from '../lib/drive'
 import { cls } from '../lib/ui'
 
 export default function Thumbnail({ asset, className }: { asset?: ContentAsset; className?: string }) {
-  const [url, setUrl] = useState<string | undefined>(asset?.thumbnailUrl)
+  const [url, setUrl] = useState<string | undefined>(asset?.driveId ? driveThumb(asset.driveId) : asset?.thumbnailUrl)
 
   useEffect(() => {
     let live = true
-    if (asset && !asset.thumbnailUrl) {
+    if (asset?.driveId) {
+      setUrl(driveThumb(asset.driveId))
+    } else if (asset && !asset.thumbnailUrl) {
       loadBlobUrl(asset.id).then((u) => live && setUrl(u))
     } else {
       setUrl(asset?.thumbnailUrl)
@@ -16,7 +19,7 @@ export default function Thumbnail({ asset, className }: { asset?: ContentAsset; 
     return () => {
       live = false
     }
-  }, [asset?.id, asset?.thumbnailUrl])
+  }, [asset?.id, asset?.thumbnailUrl, asset?.driveId])
 
   if (!asset) {
     return (
@@ -37,6 +40,9 @@ export default function Thumbnail({ asset, className }: { asset?: ContentAsset; 
       )}
       {asset.fileType === 'video' && (
         <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 text-[10px] text-white">video</span>
+      )}
+      {asset.driveId && (
+        <span className="absolute bottom-1 left-1 rounded bg-white/85 px-1 text-[9px] font-medium text-valmer-slate">Drive</span>
       )}
     </div>
   )

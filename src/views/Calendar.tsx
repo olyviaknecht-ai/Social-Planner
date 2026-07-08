@@ -83,6 +83,11 @@ export default function Calendar() {
   const downloadPost = async (post: ScheduledPost) => {
     const list = assets.filter((a) => post.assetIds.includes(a.id))
     for (const asset of list) {
+      // Drive files: open the full-quality original in Google Drive.
+      if (asset.driveId) {
+        window.open(`https://drive.google.com/file/d/${asset.driveId}/view`, '_blank')
+        continue
+      }
       const blob = await loadBlob(asset.id)
       if (!blob) continue
       const ext = (blob.type.split('/')[1] || '').split(';')[0] || (asset.fileType === 'video' ? 'mp4' : 'jpg')
