@@ -135,6 +135,8 @@ interface State {
   updatePerson: (id: string, patch: Partial<PersonMemory>) => void
   removePerson: (id: string) => void
 
+  groupCarousel: (assetIds: string[]) => string
+  ungroupCarousel: (carouselId: string) => void
   createCarouselPost: (assetIds: string[]) => string
   repromptCaption: (postId: string, guidance: string) => void
 
@@ -408,6 +410,16 @@ export const useStore = create<State>()(
       updatePerson: (id, patch) =>
         set((s) => ({ people: s.people.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       removePerson: (id) => set((s) => ({ people: s.people.filter((p) => p.id !== id) })),
+
+      groupCarousel: (assetIds) => {
+        const cid = uid('carousel')
+        const idset = new Set(assetIds)
+        set((s) => ({ assets: s.assets.map((a) => (idset.has(a.id) ? { ...a, carouselId: cid } : a)) }))
+        return cid
+      },
+
+      ungroupCarousel: (carouselId) =>
+        set((s) => ({ assets: s.assets.map((a) => (a.carouselId === carouselId ? { ...a, carouselId: undefined } : a)) })),
 
       createCarouselPost: (assetIds) => {
         const id = uid('post')

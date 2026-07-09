@@ -8,6 +8,7 @@ import { FILTERS, groupAssets, strengthOf } from '../lib/insights'
 import type { AssetActionId } from '../lib/insights'
 import type { AssetStrength, ContentAsset } from '../types'
 import AssetCard from '../components/AssetCard'
+import CarouselCard from '../components/CarouselCard'
 import AssetDrawer from '../components/AssetDrawer'
 import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
@@ -17,7 +18,7 @@ import DriveConnect from '../components/DriveConnect'
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
 export default function Library() {
-  const { assets, pillars, posts, people, campaigns, folders, driveFolderId, syncDrive, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost } = useStore()
+  const { assets, pillars, posts, people, campaigns, folders, driveFolderId, syncDrive, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost, groupCarousel, ungroupCarousel } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
@@ -125,7 +126,8 @@ export default function Library() {
     flash(`${ids.length} posts scheduled`)
     clear()
   }
-  const batchCarousel = () => { const id = createCarouselPost(ids); clear(); setOpenPost(id) }
+  const batchCarousel = () => { groupCarousel(ids); flash(`Grouped ${ids.length} photos into a carousel. Find it in the library, schedule it whenever.`); clear() }
+  const scheduleCarousel = (memberIds: string[]) => { const id = createCarouselPost(memberIds); setOpenPost(id) }
 
   return (
     <div className="p-6 pb-28">
@@ -224,17 +226,17 @@ export default function Library() {
                 <span className="text-xs text-valmer-slate/50">{g.assets.length} assets</span>
                 {g.assets.length >= 2 && g.kind !== 'ungrouped' && (
                   <div className="ml-auto flex gap-2">
-                    <button onClick={() => { const id = createCarouselPost(g.assets.map((a) => a.id)); setOpenPost(id) }} className="btn-outline py-1 text-xs">Make sequence (carousel)</button>
+                    <button onClick={() => { groupCarousel(g.assets.map((a) => a.id)); flash('Grouped into a carousel. Schedule it whenever you are ready.') }} className="btn-outline py-1 text-xs">Group as carousel</button>
                     <button onClick={() => { g.assets.forEach((a) => createPost(a, {})); flash(`${g.assets.length} captions drafted`) }} className="btn-outline py-1 text-xs">Draft all captions</button>
                   </div>
                 )}
               </div>
-              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }} />
+              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
             </div>
           ))}
         </div>
       ) : (
-        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }} />
+        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
       )}
 
       {/* batch bar */}
@@ -256,7 +258,7 @@ export default function Library() {
             <option value="__none">Remove from folder</option>
           </select>
           <button onClick={batchCaptions} className="btn-primary py-1.5 text-xs">Generate captions</button>
-          <button onClick={batchCarousel} disabled={selected.size < 2} className="btn-outline py-1.5 text-xs disabled:opacity-40">Create carousel</button>
+          <button onClick={batchCarousel} disabled={selected.size < 2} className="btn-outline py-1.5 text-xs disabled:opacity-40">Group as carousel</button>
           <button onClick={batchSchedule} className="btn-outline py-1.5 text-xs">Schedule</button>
           <button onClick={() => { updateAssets(ids, { status: 'posted' }); flash('Marked as used'); clear() }} className="btn-outline py-1.5 text-xs">Mark used</button>
           <button onClick={() => { updateAssets(ids, { strength: 'archive', status: 'unusable' }); flash('Archived'); clear() }} className="btn-outline py-1.5 text-xs">Archive</button>
@@ -273,22 +275,44 @@ export default function Library() {
   )
 }
 
-function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction }: any) {
+function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUngroupCarousel }: any) {
+  // Fold assets that share a carouselId into a single carousel card, keeping order.
+  const items: ({ kind: 'single'; asset: ContentAsset } | { kind: 'carousel'; id: string; assets: ContentAsset[] })[] = []
+  const groups = new Map<string, ContentAsset[]>()
+  for (const a of assets as ContentAsset[]) {
+    if (a.carouselId) {
+      let g = groups.get(a.carouselId)
+      if (!g) { g = []; groups.set(a.carouselId, g); items.push({ kind: 'carousel', id: a.carouselId, assets: g }) }
+      g.push(a)
+    } else {
+      items.push({ kind: 'single', asset: a })
+    }
+  }
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {assets.map((a: ContentAsset) => (
-        <AssetCard
-          key={a.id}
-          asset={a}
-          posts={posts}
-          pillar={pillars.find((p: any) => p.id === a.selectedPillarId)}
-          campaignLabel={campaignName(a.campaignId)}
-          selected={selected.has(a.id)}
-          onToggle={() => toggle(a.id)}
-          onOpen={() => setOpenAsset(a.id)}
-          onAction={(id: AssetActionId) => onAction(a, id)}
-        />
-      ))}
+      {items.map((item) =>
+        item.kind === 'carousel' ? (
+          <CarouselCard
+            key={item.id}
+            assets={item.assets}
+            onSchedule={() => onScheduleCarousel(item.assets.map((a) => a.id))}
+            onUngroup={() => onUngroupCarousel(item.id)}
+            onOpenAsset={setOpenAsset}
+          />
+        ) : (
+          <AssetCard
+            key={item.asset.id}
+            asset={item.asset}
+            posts={posts}
+            pillar={pillars.find((p: any) => p.id === item.asset.selectedPillarId)}
+            campaignLabel={campaignName(item.asset.campaignId)}
+            selected={selected.has(item.asset.id)}
+            onToggle={() => toggle(item.asset.id)}
+            onOpen={() => setOpenAsset(item.asset.id)}
+            onAction={(id: AssetActionId) => onAction(item.asset, id)}
+          />
+        ),
+      )}
     </div>
   )
 }
