@@ -23,6 +23,7 @@ export default function Library() {
   const [openPost, setOpenPost] = useState<string | null>(null)
   const [filter, setFilter] = useState('all')
   const [folderFilter, setFolderFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState('recommended')
   const [grouped, setGrouped] = useState(false)
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -64,13 +65,21 @@ export default function Library() {
   const inFolder = (a: ContentAsset) => folderFilter === 'all' || (folderFilter === 'none' ? !a.folderId : a.folderId === folderFilter)
   const filtered = useMemo(
     () => {
-      // Used photos sink to the very bottom, then archived, then strongest first.
+      // Recommended: used photos sink to the bottom, then archived, then strongest first.
       const rank = (a: ContentAsset) => (a.status === 'posted' ? 2 : strengthOf(a) === 'archive' ? 1 : 0)
       return assets
         .filter((a) => inFolder(a) && filterDef.test(a, { posts }))
-        .sort((a, b) => rank(a) - rank(b) || STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt))
+        .sort((a, b) => {
+          switch (sortBy) {
+            case 'newest': return b.uploadedAt.localeCompare(a.uploadedAt)
+            case 'oldest': return a.uploadedAt.localeCompare(b.uploadedAt)
+            case 'name': return a.title.localeCompare(b.title)
+            case 'name-desc': return b.title.localeCompare(a.title)
+            default: return rank(a) - rank(b) || STRENGTH_ORDER[strengthOf(a)] - STRENGTH_ORDER[strengthOf(b)] || b.uploadedAt.localeCompare(a.uploadedAt)
+          }
+        })
     },
-    [assets, filterDef, posts, folderFilter],
+    [assets, filterDef, posts, folderFilter, sortBy],
   )
 
   // ---- single-asset post creation ----
@@ -176,18 +185,27 @@ export default function Library() {
             </button>
           )
         })}
+        <div className="ml-auto flex items-center gap-2">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-valmer-ink" title="Sort by">
+            <option value="recommended">Sort: Recommended</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+          </select>
         {filtered.length > 0 && (() => {
           const allSelected = filtered.every((a) => selected.has(a.id))
           return (
             <button
               onClick={() => setSelected(allSelected ? new Set() : new Set(filtered.map((a) => a.id)))}
-              className="ml-auto chip border border-valmer-slate/30 text-valmer-slate hover:bg-valmer-slate hover:text-white"
+              className="chip border border-valmer-slate/30 text-valmer-slate hover:bg-valmer-slate hover:text-white"
             >
               <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border border-current text-[9px]">{allSelected ? '✓' : ''}</span>
               {allSelected ? 'Deselect all' : `Select all ${filtered.length}`}
             </button>
           )
         })()}
+        </div>
       </div>
 
       {toast && <div className="mb-3 rounded-lg bg-valmer-sage/15 px-3 py-2 text-sm text-valmer-sage">{toast}</div>}
