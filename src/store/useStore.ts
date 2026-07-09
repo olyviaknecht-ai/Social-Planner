@@ -51,9 +51,10 @@ interface Bucket {
   voice: string
   driveFolderId: string
   driveApiKey: string
+  dismissedDriveIds: string[]
 }
 function bucketFrom(s: Bucket): Bucket {
-  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig, brief: s.brief, voice: s.voice, driveFolderId: s.driveFolderId, driveApiKey: s.driveApiKey }
+  return { assets: s.assets, pillars: s.pillars, campaigns: s.campaigns, posts: s.posts, weeks: s.weeks, people: s.people, folders: s.folders, metaConfig: s.metaConfig, brief: s.brief, voice: s.voice, driveFolderId: s.driveFolderId, driveApiKey: s.driveApiKey, dismissedDriveIds: s.dismissedDriveIds }
 }
 function saveBucket(id: string, s: Bucket) {
   try { localStorage.setItem(BRAND_KEY(id), JSON.stringify(bucketFrom(s))) } catch { /* quota */ }
@@ -64,7 +65,7 @@ function loadBucket(id: string): Bucket | null {
 // A brand-new brand is a blank slate — no pillars or storyline carry over.
 // Onboarding (ChatGPT) builds the pillars; "Generate plan" builds the storyline.
 function freshBucket(): Bucket {
-  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta(), brief: '', voice: '', driveFolderId: '', driveApiKey: '' }
+  return { assets: [], pillars: [], campaigns: [], posts: [], weeks: [], people: [], folders: DEFAULT_FOLDERS.map((f) => ({ ...f })), metaConfig: freshMeta(), brief: '', voice: '', driveFolderId: '', driveApiKey: '', dismissedDriveIds: [] }
 }
 
 interface State {
@@ -90,6 +91,7 @@ interface State {
   voice: string
   driveFolderId: string
   driveApiKey: string
+  dismissedDriveIds: string[]
   aiConfig: AIConfig
   metaConfig: MetaConfig
 
@@ -181,6 +183,7 @@ export const useStore = create<State>()(
       voice: '',
       driveFolderId: '',
       driveApiKey: '',
+      dismissedDriveIds: [],
       aiConfig: { enabled: false, apiKey: '', model: 'gpt-4o-mini' },
       metaConfig: freshMeta(),
 
@@ -192,9 +195,10 @@ export const useStore = create<State>()(
         if (!driveApiKey.trim() || !driveFolderId.trim()) return { added: 0, total: 0 }
         const files = await listDriveFolder(driveApiKey, driveFolderId)
         const existing = new Set(get().assets.map((a) => a.driveId).filter(Boolean))
+        const dismissed = new Set(get().dismissedDriveIds)
         let added = 0
         for (const f of files) {
-          if (existing.has(f.id)) continue
+          if (existing.has(f.id) || dismissed.has(f.id)) continue
           get().addAsset({ fileType: f.mimeType.startsWith('video/') ? 'video' : 'photo', title: f.name.replace(/\.[^.]+$/, ''), driveId: f.id })
           added++
         }
@@ -372,19 +376,28 @@ export const useStore = create<State>()(
 
       removeAsset: (id) => {
         removeBlob(id)
-        set((s) => ({
-          assets: s.assets.filter((a) => a.id !== id),
-          posts: s.posts.map((p) => ({ ...p, assetIds: p.assetIds.filter((x) => x !== id) })),
-        }))
+        set((s) => {
+          const a = s.assets.find((x) => x.id === id)
+          const dismissed = a?.driveId ? Array.from(new Set([...s.dismissedDriveIds, a.driveId])) : s.dismissedDriveIds
+          return {
+            assets: s.assets.filter((x) => x.id !== id),
+            posts: s.posts.map((p) => ({ ...p, assetIds: p.assetIds.filter((x) => x !== id) })),
+            dismissedDriveIds: dismissed,
+          }
+        })
       },
 
       removeAssets: (ids) => {
         const idset = new Set(ids)
         ids.forEach(removeBlob)
-        set((s) => ({
-          assets: s.assets.filter((a) => !idset.has(a.id)),
-          posts: s.posts.map((p) => ({ ...p, assetIds: p.assetIds.filter((x) => !idset.has(x)) })),
-        }))
+        set((s) => {
+          const drive = s.assets.filter((a) => idset.has(a.id) && a.driveId).map((a) => a.driveId!)
+          return {
+            assets: s.assets.filter((a) => !idset.has(a.id)),
+            posts: s.posts.map((p) => ({ ...p, assetIds: p.assetIds.filter((x) => !idset.has(x)) })),
+            dismissedDriveIds: Array.from(new Set([...s.dismissedDriveIds, ...drive])),
+          }
+        })
       },
 
       addPerson: (p) => {
@@ -689,7 +702,7 @@ function localImportBucket(): { name: string; bucket: Bucket } | null {
     if (!st || !st.assets) return null
     const bucket: Bucket = {
       assets: st.assets || [], pillars: st.pillars || [], campaigns: st.campaigns || [], posts: st.posts || [],
-      weeks: st.weeks || [], people: st.people || [], folders: st.folders || DEFAULT_FOLDERS, metaConfig: st.metaConfig || freshMeta(), brief: st.brief || '', voice: st.voice || '', driveFolderId: st.driveFolderId || '', driveApiKey: st.driveApiKey || '',
+      weeks: st.weeks || [], people: st.people || [], folders: st.folders || DEFAULT_FOLDERS, metaConfig: st.metaConfig || freshMeta(), brief: st.brief || '', voice: st.voice || '', driveFolderId: st.driveFolderId || '', driveApiKey: st.driveApiKey || '', dismissedDriveIds: st.dismissedDriveIds || [],
     }
     if (!bucket.assets.length && !bucket.pillars.length && !bucket.posts.length) return null
     const name = (st.brands && st.brands.find((b: Brand) => b.id === st.activeBrandId)?.name) || 'My Brand'
