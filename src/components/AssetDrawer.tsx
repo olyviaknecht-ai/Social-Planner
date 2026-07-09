@@ -16,6 +16,7 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
   const asset = assets.find((a) => a.id === assetId)
   const [busy, setBusy] = useState(false)
   const [lightbox, setLightbox] = useState(false)
+  const [reanalyzed, setReanalyzed] = useState(false)
   if (!asset) return null
   const set = (patch: Partial<typeof asset>) => updateAsset(asset.id, patch)
   const analysis = asset.analysis
@@ -82,7 +83,16 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
             <div className="card p-4">
               <div className="mb-2 flex items-center justify-between">
                 <div className="font-serif text-valmer-slate">Strategist read</div>
-                <button onClick={() => reanalyzeAsset(asset.id)} className="btn-outline py-1 text-xs">Re-analyze</button>
+                <button
+                  onClick={() => {
+                    reanalyzeAsset(asset.id)
+                    setReanalyzed(true)
+                    setTimeout(() => setReanalyzed(false), 1800)
+                  }}
+                  className={cls('py-1 text-xs', reanalyzed ? 'chip bg-valmer-sage/15 text-valmer-sage' : 'btn-outline')}
+                >
+                  {reanalyzed ? '✓ Updated from your notes' : 'Re-analyze'}
+                </button>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                 <Row k="Content type" v={analysis.contentType} />
