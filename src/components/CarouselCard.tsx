@@ -5,11 +5,13 @@ import Thumbnail from './Thumbnail'
 export default function CarouselCard({
   assets,
   onSchedule,
+  onUnschedule,
   onUngroup,
   onOpenAsset,
 }: {
   assets: ContentAsset[]
   onSchedule: () => void
+  onUnschedule: () => void
   onUngroup: () => void
   onOpenAsset: (id: string) => void
 }) {
@@ -44,9 +46,11 @@ export default function CarouselCard({
         <div className="truncate text-sm font-medium text-valmer-ink">{cover.title || 'Carousel'}</div>
         <div className="text-[11px] text-valmer-slate/60">{assets.length} photos grouped together. Not scheduled yet.</div>
         <div className="mt-auto flex gap-2 pt-1">
-          <button onClick={onSchedule} className={cls('btn-primary flex-1 py-1 text-xs', scheduled && 'opacity-70')}>
-            {scheduled ? 'Scheduled' : 'Schedule'}
-          </button>
+          {scheduled ? (
+            <button onClick={onUnschedule} className="btn-outline flex-1 py-1 text-xs" title="Remove from the calendar, keep it here">Unschedule</button>
+          ) : (
+            <button onClick={onSchedule} className="btn-primary flex-1 py-1 text-xs">Schedule</button>
+          )}
           <button onClick={onUngroup} className="btn-outline py-1 text-xs" title="Split back into separate photos">Ungroup</button>
         </div>
       </div>

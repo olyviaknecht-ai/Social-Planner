@@ -137,6 +137,7 @@ interface State {
 
   groupCarousel: (assetIds: string[]) => string
   ungroupCarousel: (carouselId: string) => void
+  unscheduleAsset: (assetId: string) => void
   createCarouselPost: (assetIds: string[]) => string
   repromptCaption: (postId: string, guidance: string) => void
 
@@ -420,6 +421,19 @@ export const useStore = create<State>()(
 
       ungroupCarousel: (carouselId) =>
         set((s) => ({ assets: s.assets.map((a) => (a.carouselId === carouselId ? { ...a, carouselId: undefined } : a)) })),
+
+      // Remove the calendar post(s) that use this asset and send the freed photos back to the library.
+      unscheduleAsset: (assetId) =>
+        set((s) => {
+          const kill = new Set(s.posts.filter((p) => p.assetIds.includes(assetId)).map((p) => p.id))
+          if (!kill.size) return {}
+          const freed = new Set<string>()
+          s.posts.forEach((p) => { if (kill.has(p.id)) p.assetIds.forEach((id) => freed.add(id)) })
+          return {
+            posts: s.posts.filter((p) => !kill.has(p.id)),
+            assets: s.assets.map((a) => (freed.has(a.id) && a.status === 'scheduled' ? { ...a, status: 'unused' } : a)),
+          }
+        }),
 
       createCarouselPost: (assetIds) => {
         const id = uid('post')

@@ -82,6 +82,7 @@ export type AssetActionId =
   | 'reel'
   | 'recap'
   | 'schedule-next-week'
+  | 'unschedule'
   | 'story-only'
   | 'save-future'
   | 'archive'

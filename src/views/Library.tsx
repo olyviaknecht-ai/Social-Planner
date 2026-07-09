@@ -18,7 +18,7 @@ import DriveConnect from '../components/DriveConnect'
 const STRENGTH_ORDER: Record<AssetStrength, number> = { hero: 0, support: 1, 'needs-context': 2, story: 3, archive: 4 }
 
 export default function Library() {
-  const { assets, pillars, posts, people, campaigns, folders, driveFolderId, syncDrive, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost, groupCarousel, ungroupCarousel } = useStore()
+  const { assets, pillars, posts, people, campaigns, folders, driveFolderId, syncDrive, addAsset, addFolder, removeFolder, addPost, updateAsset, updateAssets, removeAssets, createCarouselPost, groupCarousel, ungroupCarousel, unscheduleAsset } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
@@ -107,6 +107,7 @@ export default function Library() {
       case 'reel': createPost(a, { titleSuffix: '(Reel)', platforms: ['reels', 'tiktok'], open: true }); break
       case 'recap': createPost(a, { titleSuffix: 'recap', open: true }); break
       case 'schedule-next-week': createPost(a, { date: format(addDays(new Date(), 7), 'yyyy-MM-dd'), status: 'scheduled' }); flash('Scheduled for next week'); break
+      case 'unschedule': unscheduleAsset(a.id); flash('Unscheduled — back in your library'); break
       case 'story-only': updateAsset(a.id, { strength: 'story' }); flash('Marked as story only'); break
       case 'save-future': updateAsset(a.id, { tags: Array.from(new Set([...a.tags, 'future'])) }); flash('Saved for a future campaign'); break
       case 'archive': updateAsset(a.id, { strength: 'archive', status: 'unusable' }); flash('Archived'); break
@@ -128,6 +129,7 @@ export default function Library() {
   }
   const batchCarousel = () => { groupCarousel(ids); flash(`Grouped ${ids.length} photos into a carousel. Find it in the library, schedule it whenever.`); clear() }
   const scheduleCarousel = (memberIds: string[]) => { const id = createCarouselPost(memberIds); setOpenPost(id) }
+  const unscheduleCarousel = (memberIds: string[]) => { unscheduleAsset(memberIds[0]); flash('Unscheduled — back in your library') }
 
   return (
     <div className="p-6 pb-28">
@@ -231,12 +233,12 @@ export default function Library() {
                   </div>
                 )}
               </div>
-              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
+              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
             </div>
           ))}
         </div>
       ) : (
-        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
+        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
       )}
 
       {/* batch bar */}
@@ -275,7 +277,7 @@ export default function Library() {
   )
 }
 
-function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUngroupCarousel }: any) {
+function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUnscheduleCarousel, onUngroupCarousel }: any) {
   // Fold assets that share a carouselId into a single carousel card, keeping order.
   const items: ({ kind: 'single'; asset: ContentAsset } | { kind: 'carousel'; id: string; assets: ContentAsset[] })[] = []
   const groups = new Map<string, ContentAsset[]>()
@@ -296,6 +298,7 @@ function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenA
             key={item.id}
             assets={item.assets}
             onSchedule={() => onScheduleCarousel(item.assets.map((a) => a.id))}
+            onUnschedule={() => onUnscheduleCarousel(item.assets.map((a) => a.id))}
             onUngroup={() => onUngroupCarousel(item.id)}
             onOpenAsset={setOpenAsset}
           />

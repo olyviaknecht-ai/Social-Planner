@@ -33,6 +33,11 @@ export default function AssetCard({
   const sMeta = STRENGTH_META[strength]
   const eventOrCampaign = campaignLabel || asset.event.trim()
   const used = asset.status === 'posted'
+  const onCalendar = status === 'scheduled' || status === 'drafted' || status === 'approved'
+  const actions = [
+    ...(onCalendar ? [{ id: 'unschedule' as const, label: 'Unschedule (back to library)' }] : []),
+    ...recommendedActions(asset),
+  ]
 
   return (
     <div className={cls('card relative flex flex-col overflow-hidden transition-shadow hover:shadow-md', selected && 'ring-2 ring-valmer-sage', (strength === 'archive' || used) && 'opacity-60')}>
@@ -84,7 +89,7 @@ export default function AssetCard({
           <button onClick={() => setMenu((v) => !v)} className="btn-outline w-full py-1 text-xs">Next action ▾</button>
           {menu && (
             <div className="absolute bottom-full left-0 z-20 mb-1 w-full overflow-hidden rounded-lg border border-black/10 bg-white shadow-lg">
-              {recommendedActions(asset).map((a) => (
+              {actions.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => { setMenu(false); onAction(a.id) }}
