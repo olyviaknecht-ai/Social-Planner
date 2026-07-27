@@ -230,7 +230,7 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
         </div>
       </div>
 
-      {lightbox && <Lightbox asset={asset} onClose={() => setLightbox(false)} />}
+      {lightbox && <Lightbox assets={[asset]} onClose={() => setLightbox(false)} />}
     </div>
   )
 }

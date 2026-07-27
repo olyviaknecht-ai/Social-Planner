@@ -25,7 +25,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
   const [aiErr, setAiErr] = useState<string | null>(null)
   const [pubBusy, setPubBusy] = useState(false)
   const [pubMsg, setPubMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [lightbox, setLightbox] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   if (!post) return null
 
   // Keep attached assets in the post's own order so the first one is the cover.
@@ -167,7 +167,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
           {/* big image preview */}
           {primaryAsset && (
             <div>
-              <button onClick={() => setLightbox(primaryAsset.id)} className="group relative block w-full overflow-hidden rounded-xl" title="Click to enlarge">
+              <button onClick={() => setLightbox(0)} className="group relative block w-full overflow-hidden rounded-xl" title={postAssets.length > 1 ? 'Click to view the carousel' : 'Click to enlarge'}>
                 <Thumbnail asset={primaryAsset} className="aspect-[16/10] w-full" />
                 <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">Click to enlarge</span>
               </button>
@@ -260,7 +260,7 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
                 const isCover = i === 0
                 return (
                   <div key={a.id} className={cls('group relative rounded-lg', isCover && 'ring-2 ring-valmer-sage')}>
-                    <button onClick={() => setLightbox(a.id)} title="Click to enlarge">
+                    <button onClick={() => setLightbox(i)} title="Click to enlarge">
                       <Thumbnail asset={a} className="h-16 w-16 rounded-lg" />
                     </button>
                     {isCover ? (
@@ -445,10 +445,9 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
         </div>
       </div>
 
-      {lightbox && (() => {
-        const a = assets.find((x) => x.id === lightbox)
-        return a ? <Lightbox asset={a} onClose={() => setLightbox(null)} /> : null
-      })()}
+      {lightbox !== null && postAssets.length > 0 && (
+        <Lightbox assets={postAssets} startIndex={lightbox} onClose={() => setLightbox(null)} />
+      )}
     </div>
   )
 }
