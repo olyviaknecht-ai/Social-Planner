@@ -9,13 +9,13 @@ export default function CarouselCard({
   onSchedule,
   onUnschedule,
   onUngroup,
-  onOpenAsset,
+  onOpen,
 }: {
   assets: ContentAsset[]
   onSchedule: () => void
   onUnschedule: () => void
   onUngroup: () => void
-  onOpenAsset: (id: string) => void
+  onOpen: () => void
 }) {
   const cover = assets[0]
   const rest = assets.slice(1, 4)
@@ -27,7 +27,7 @@ export default function CarouselCard({
       {scheduled && <span className="absolute right-2 top-2 z-10 chip bg-emerald-600 text-[10px] text-white">Scheduled</span>}
 
       <div className="relative">
-        <button onClick={() => onOpenAsset(cover.id)} className="block w-full text-left" title="View photos">
+        <button onClick={onOpen} className="block w-full text-left" title="Open to reorder photos">
           <Thumbnail asset={cover} className="aspect-[4/3] w-full" />
         </button>
         {assets.length > 1 && (
@@ -60,8 +60,8 @@ export default function CarouselCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <div className="truncate text-sm font-medium text-valmer-ink">{cover.title || 'Carousel'}</div>
-        <div className="text-[11px] text-valmer-slate/60">{assets.length} photos grouped together.{scheduled ? '' : ' Not scheduled yet.'}</div>
+        <button onClick={onOpen} className="truncate text-left text-sm font-medium text-valmer-ink hover:text-valmer-sage">{cover.title || 'Carousel'}</button>
+        <button onClick={onOpen} className="text-left text-[11px] text-valmer-slate/60 hover:text-valmer-sage">{assets.length} photos · tap to reorder{scheduled ? '' : ' · not scheduled'}</button>
         {cover.driveId && <DriveLink driveId={cover.driveId} label="Open cover in Drive" />}
         <div className="mt-auto flex gap-2 pt-1">
           {scheduled ? (

@@ -9,6 +9,7 @@ import type { AssetActionId } from '../lib/insights'
 import type { AssetStrength, ContentAsset } from '../types'
 import AssetCard from '../components/AssetCard'
 import CarouselCard from '../components/CarouselCard'
+import CarouselModal from '../components/CarouselModal'
 import AssetDrawer from '../components/AssetDrawer'
 import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
@@ -22,6 +23,7 @@ export default function Library() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [openPost, setOpenPost] = useState<string | null>(null)
+  const [openCarousel, setOpenCarousel] = useState<string | null>(null)
   const [filter, setFilter] = useState('all')
   const [folderFilter, setFolderFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState('recommended')
@@ -233,12 +235,12 @@ export default function Library() {
                   </div>
                 )}
               </div>
-              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
+              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onOpenCarousel: setOpenCarousel }} />
             </div>
           ))}
         </div>
       ) : (
-        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel }} />
+        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onOpenCarousel: setOpenCarousel }} />
       )}
 
       {/* batch bar */}
@@ -269,6 +271,15 @@ export default function Library() {
         </div>
       )}
 
+      {openCarousel && (
+        <CarouselModal
+          carouselId={openCarousel}
+          onSchedule={(orderedIds) => scheduleCarousel(orderedIds)}
+          onUnschedule={(orderedIds) => unscheduleCarousel(orderedIds)}
+          onUngroup={() => ungroupCarousel(openCarousel)}
+          onClose={() => setOpenCarousel(null)}
+        />
+      )}
       {openAsset && <AssetDrawer assetId={openAsset} onClose={() => setOpenAsset(null)} onOpenPost={(id) => { setOpenAsset(null); setOpenPost(id) }} />}
       {openPost && <PostEditor postId={openPost} onClose={() => setOpenPost(null)} />}
       {peopleOpen && <PeopleManager onClose={() => setPeopleOpen(false)} />}
@@ -277,7 +288,7 @@ export default function Library() {
   )
 }
 
-function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUnscheduleCarousel, onUngroupCarousel }: any) {
+function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUnscheduleCarousel, onUngroupCarousel, onOpenCarousel }: any) {
   // Fold assets that share a carouselId into a single carousel card, keeping order.
   const items: ({ kind: 'single'; asset: ContentAsset } | { kind: 'carousel'; id: string; assets: ContentAsset[] })[] = []
   const groups = new Map<string, ContentAsset[]>()
@@ -290,6 +301,8 @@ function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenA
       items.push({ kind: 'single', asset: a })
     }
   }
+  // Order each carousel's photos by their saved position.
+  for (const g of groups.values()) g.sort((a, b) => (a.carouselOrder ?? 0) - (b.carouselOrder ?? 0))
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((item) =>
@@ -300,7 +313,7 @@ function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenA
             onSchedule={() => onScheduleCarousel(item.assets.map((a) => a.id))}
             onUnschedule={() => onUnscheduleCarousel(item.assets.map((a) => a.id))}
             onUngroup={() => onUngroupCarousel(item.id)}
-            onOpenAsset={setOpenAsset}
+            onOpen={() => onOpenCarousel(item.id)}
           />
         ) : (
           <AssetCard

@@ -137,6 +137,7 @@ interface State {
 
   groupCarousel: (assetIds: string[]) => string
   ungroupCarousel: (carouselId: string) => void
+  reorderCarousel: (orderedIds: string[]) => void
   unscheduleAsset: (assetId: string) => void
   createCarouselPost: (assetIds: string[]) => string
   repromptCaption: (postId: string, guidance: string) => void
@@ -414,13 +415,19 @@ export const useStore = create<State>()(
 
       groupCarousel: (assetIds) => {
         const cid = uid('carousel')
-        const idset = new Set(assetIds)
-        set((s) => ({ assets: s.assets.map((a) => (idset.has(a.id) ? { ...a, carouselId: cid } : a)) }))
+        const order = new Map(assetIds.map((id, i) => [id, i]))
+        set((s) => ({ assets: s.assets.map((a) => (order.has(a.id) ? { ...a, carouselId: cid, carouselOrder: order.get(a.id) } : a)) }))
         return cid
       },
 
       ungroupCarousel: (carouselId) =>
-        set((s) => ({ assets: s.assets.map((a) => (a.carouselId === carouselId ? { ...a, carouselId: undefined } : a)) })),
+        set((s) => ({ assets: s.assets.map((a) => (a.carouselId === carouselId ? { ...a, carouselId: undefined, carouselOrder: undefined } : a)) })),
+
+      // Set each asset's position within its carousel to match the given order.
+      reorderCarousel: (orderedIds) => {
+        const order = new Map(orderedIds.map((id, i) => [id, i]))
+        set((s) => ({ assets: s.assets.map((a) => (order.has(a.id) ? { ...a, carouselOrder: order.get(a.id) } : a)) }))
+      },
 
       // Remove the calendar post(s) that use this asset and send the freed photos back to the library.
       unscheduleAsset: (assetId) =>

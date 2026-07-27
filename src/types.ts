@@ -86,6 +86,7 @@ export interface ContentAsset {
   strength?: AssetStrength // user override; otherwise derived from analysis
   useNote?: string // editable "suggested use" line; falls back to the computed suggestion
   carouselId?: string // groups assets into a carousel that lives in the library until scheduled
+  carouselOrder?: number // position within its carousel (0-based)
   analysis?: AssetAnalysis
 }
 
