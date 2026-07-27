@@ -28,6 +28,7 @@ import type { ScheduledPost } from '../types'
 import { cls } from '../lib/ui'
 import { exportCsv, exportIcs, copyWeekCaptions } from '../lib/export'
 import Thumbnail from '../components/Thumbnail'
+import DriveLink from '../components/DriveLink'
 import { PlatformBadge, StatusBadge } from '../components/Badges'
 import PostEditor from '../components/PostEditor'
 import PageHeader from '../components/PageHeader'
@@ -285,6 +286,11 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete, onDownlo
           </div>
         </div>
       </div>
+      {asset?.driveId && (
+        <div className="border-t border-black/5 px-1.5 py-1">
+          <DriveLink driveId={asset.driveId} className="text-[10px]" />
+        </div>
+      )}
       <div className="flex items-center justify-between border-t border-black/5 px-1.5 py-1">
         <button onClick={onOpen} className="text-[10px] text-valmer-sage hover:underline">edit</button>
         {asset && <button onClick={onDownload} className="text-[10px] text-valmer-slate/40 hover:text-valmer-slate" title="Download photo/video">↓</button>}

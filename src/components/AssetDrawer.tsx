@@ -8,6 +8,7 @@ import { aiGenerateCaption, aiReady } from '../engine/ai'
 import { cls } from '../lib/ui'
 import Thumbnail from './Thumbnail'
 import Lightbox from './Lightbox'
+import DriveLink from './DriveLink'
 import { PillarBadge } from './Badges'
 
 export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId: string; onClose: () => void; onOpenPost: (id: string) => void }) {
@@ -75,6 +76,7 @@ export default function AssetDrawer({ assetId, onClose, onOpenPost }: { assetId:
                 <PillarBadge pillar={pillar} />
                 <span className={cls('chip', asset.status === 'unusable' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600')}>{asset.status}</span>
               </div>
+              {asset.driveId && <DriveLink driveId={asset.driveId} />}
             </div>
           </div>
 

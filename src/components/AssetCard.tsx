@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore'
 import { STRENGTH_META, displayStatus, recommendedActions, strengthOf, suggestedUse } from '../lib/insights'
 import type { AssetActionId } from '../lib/insights'
 import Thumbnail from './Thumbnail'
+import DriveLink from './DriveLink'
 import { PillarBadge, PlatformBadge } from './Badges'
 
 export default function AssetCard({
@@ -67,6 +68,8 @@ export default function AssetCard({
           <span className={cls('chip capitalize', STATUS_STYLES[status === 'unused' ? 'idea' : status])}>{status}</span>
           {asset.timeSensitive && <span className="chip bg-rose-100 text-rose-700">time-sensitive</span>}
         </div>
+
+        {asset.driveId && <DriveLink driveId={asset.driveId} />}
 
         {eventOrCampaign && (
           <div className="truncate text-[11px] text-valmer-slate/70">

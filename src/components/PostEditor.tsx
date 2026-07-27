@@ -11,6 +11,7 @@ import { loadBlob } from '../store/blobs'
 import { cls } from '../lib/ui'
 import Thumbnail from './Thumbnail'
 import Lightbox from './Lightbox'
+import DriveLink from './DriveLink'
 
 export default function PostEditor({ postId, onClose }: { postId: string; onClose: () => void }) {
   const { posts, pillars, campaigns, assets, people, aiConfig, metaConfig, brands, activeBrandId, brief, voice, updatePost, removePost, regenerateCaptionForPost, addEmailVersionToPost, repromptCaption } =
@@ -172,6 +173,13 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
               <button onClick={downloadMedia} className="btn-outline mt-2 w-full">
                 ⬇ Download full quality{postAssets.length > 1 ? ` (${postAssets.length} files)` : ''}
               </button>
+              {postAssets.some((a) => a.driveId) && (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                  {postAssets.filter((a) => a.driveId).map((a, i) => (
+                    <DriveLink key={a.id} driveId={a.driveId} label={postAssets.length > 1 ? `Open photo ${i + 1} in Drive` : 'Open full quality in Drive'} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
