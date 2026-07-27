@@ -177,7 +177,12 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
               {postAssets.some((a) => a.driveId) && (
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                   {postAssets.filter((a) => a.driveId).map((a, i) => (
-                    <DriveLink key={a.id} driveId={a.driveId} label={postAssets.length > 1 ? `Open photo ${i + 1} in Drive` : 'Open full quality in Drive'} />
+                    <DriveLink
+                      key={a.id}
+                      driveId={a.driveId}
+                      video={a.fileType === 'video'}
+                      label={postAssets.length > 1 ? `${a.fileType === 'video' ? 'Watch' : 'Open'} ${i + 1} in Drive` : undefined}
+                    />
                   ))}
                 </div>
               )}

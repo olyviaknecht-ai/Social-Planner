@@ -69,7 +69,7 @@ export default function AssetCard({
           {asset.timeSensitive && <span className="chip bg-rose-100 text-rose-700">time-sensitive</span>}
         </div>
 
-        {asset.driveId && <DriveLink driveId={asset.driveId} />}
+        {asset.driveId && <DriveLink driveId={asset.driveId} video={asset.fileType === 'video'} />}
 
         {eventOrCampaign && (
           <div className="truncate text-[11px] text-valmer-slate/70">

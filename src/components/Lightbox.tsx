@@ -19,11 +19,21 @@ export default function Lightbox({ asset, onClose }: { asset: ContentAsset; onCl
 
   // Drive files play/show full quality straight from Google Drive.
   if (asset.driveId) {
+    const isVideo = asset.fileType === 'video'
     return (
       <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/85 p-6" onClick={onClose}>
         <button onClick={onClose} className="absolute right-5 top-4 text-2xl text-white/80 hover:text-white">✕</button>
-        <iframe src={drivePreview(asset.driveId)} className="h-[80vh] w-[90vw] max-w-4xl rounded-lg bg-black" onClick={(e) => e.stopPropagation()} allow="autoplay" title={asset.title} />
-        <a href={driveView(asset.driveId)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="mt-3 text-sm text-white/80 underline hover:text-white">Open full quality in Google Drive</a>
+        <iframe src={drivePreview(asset.driveId)} className="h-[76vh] w-[90vw] max-w-4xl rounded-lg bg-black" onClick={(e) => e.stopPropagation()} allow="autoplay" title={asset.title} />
+        <a
+          href={driveView(asset.driveId)}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-valmer-ink shadow hover:bg-valmer-sage hover:text-white"
+        >
+          {isVideo ? '▶ Watch in Google Drive' : '↗ Open full quality in Google Drive'}
+        </a>
+        {isVideo && <div className="mt-2 text-xs text-white/60">If the video won't play here, use the button above to watch it in Drive.</div>}
       </div>
     )
   }

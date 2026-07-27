@@ -62,7 +62,7 @@ export default function CarouselCard({
       <div className="flex flex-1 flex-col gap-2 p-3">
         <button onClick={onOpen} className="truncate text-left text-sm font-medium text-valmer-ink hover:text-valmer-sage">{cover.title || 'Carousel'}</button>
         <button onClick={onOpen} className="text-left text-[11px] text-valmer-slate/60 hover:text-valmer-sage">{assets.length} photos · tap to reorder{scheduled ? '' : ' · not scheduled'}</button>
-        {cover.driveId && <DriveLink driveId={cover.driveId} label="Open cover in Drive" />}
+        {cover.driveId && <DriveLink driveId={cover.driveId} video={cover.fileType === 'video'} label={cover.fileType === 'video' ? 'Watch cover in Drive' : 'Open cover in Drive'} />}
         <div className="mt-auto flex gap-2 pt-1">
           {scheduled ? (
             <button onClick={onUnschedule} className="btn-outline flex-1 py-1 text-xs" title="Remove from the calendar, keep it here">Unschedule</button>

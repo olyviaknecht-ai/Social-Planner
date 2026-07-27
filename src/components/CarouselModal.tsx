@@ -104,7 +104,7 @@ function SortableTile({ asset, index, onRemove }: { asset: ContentAsset; index: 
       </div>
       <div className="flex items-center justify-between gap-2 px-2 py-1.5">
         <span className="truncate text-[11px] text-valmer-slate/70">{asset.title}</span>
-        {asset.driveId && <DriveLink driveId={asset.driveId} label="Drive" className="shrink-0 text-[10px]" />}
+        {asset.driveId && <DriveLink driveId={asset.driveId} video={asset.fileType === 'video'} label="Drive" className="shrink-0 text-[10px]" />}
       </div>
     </div>
   )

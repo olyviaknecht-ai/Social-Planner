@@ -288,7 +288,7 @@ function PostCard({ post, pillar, asset, onOpen, onDuplicate, onDelete, onDownlo
       </div>
       {asset?.driveId && (
         <div className="border-t border-black/5 px-1.5 py-1">
-          <DriveLink driveId={asset.driveId} className="text-[10px]" />
+          <DriveLink driveId={asset.driveId} className="text-[10px]" video={asset.fileType === 'video'} />
         </div>
       )}
       <div className="flex items-center justify-between border-t border-black/5 px-1.5 py-1">
