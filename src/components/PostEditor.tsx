@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { PLATFORMS, POST_STATUSES } from '../types'
-import type { Platform, ScheduledPost } from '../types'
+import type { ContentAsset, Platform, ScheduledPost } from '../types'
 import { CAPTION_CONTROLS, applyControl, generateCaption, platformVersion } from '../engine/caption'
 import type { CaptionControl } from '../engine/caption'
 import { aiGenerateCaption, aiGenerateEmail, aiReady, aiTransformCaption } from '../engine/ai'
@@ -28,7 +28,8 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
   const [lightbox, setLightbox] = useState<string | null>(null)
   if (!post) return null
 
-  const postAssets = assets.filter((a) => post.assetIds.includes(a.id))
+  // Keep attached assets in the post's own order so the first one is the cover.
+  const postAssets = post.assetIds.map((id) => assets.find((a) => a.id === id)).filter(Boolean) as ContentAsset[]
   const primaryAsset = postAssets[0]
   const pillar = pillars.find((p) => p.id === post.pillarId)
   const set = (patch: Partial<ScheduledPost>) => updatePost(post.id, patch)
@@ -246,20 +247,40 @@ export default function PostEditor({ postId, onClose }: { postId: string; onClos
                 <span className="chip bg-valmer-gold/20 text-[10px] text-valmer-gold">Carousel · {post.assetIds.length} images</span>
               )}
             </div>
+            {post.assetIds.length > 1 && (
+              <p className="mt-1 text-[11px] text-valmer-slate/55">The first photo is the cover. Hover a photo to make it the cover.</p>
+            )}
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              {postAssets.map((a) => (
-                <div key={a.id} className="relative">
-                  <button onClick={() => setLightbox(a.id)} title="Click to enlarge">
-                    <Thumbnail asset={a} className="h-16 w-16 rounded-lg" />
-                  </button>
-                  <button
-                    onClick={() => set({ assetIds: post.assetIds.filter((x) => x !== a.id) })}
-                    className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-white text-xs shadow"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+              {postAssets.map((a, i) => {
+                const isCover = i === 0
+                return (
+                  <div key={a.id} className={cls('group relative rounded-lg', isCover && 'ring-2 ring-valmer-sage')}>
+                    <button onClick={() => setLightbox(a.id)} title="Click to enlarge">
+                      <Thumbnail asset={a} className="h-16 w-16 rounded-lg" />
+                    </button>
+                    {isCover ? (
+                      <span className="absolute inset-x-0 bottom-0 rounded-b-lg bg-valmer-sage/90 py-0.5 text-center text-[9px] font-medium text-white">Cover</span>
+                    ) : (
+                      post.assetIds.length > 1 && (
+                        <button
+                          onClick={() => set({ assetIds: [a.id, ...post.assetIds.filter((x) => x !== a.id)] })}
+                          className="absolute inset-x-0 bottom-0 rounded-b-lg bg-black/60 py-0.5 text-center text-[9px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          title="Make this the cover photo"
+                        >
+                          Make cover
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => set({ assetIds: post.assetIds.filter((x) => x !== a.id) })}
+                      className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-white text-xs shadow"
+                      title="Remove from post"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )
+              })}
               <button onClick={() => setAssetPicker((v) => !v)} className="h-16 w-16 rounded-lg border-2 border-dashed border-black/15 text-2xl text-valmer-slate/50">
                 +
               </button>
