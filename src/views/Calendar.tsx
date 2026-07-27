@@ -82,7 +82,7 @@ export default function Calendar() {
 
   // Download the actual photo/video files attached to a post.
   const downloadPost = async (post: ScheduledPost) => {
-    const list = assets.filter((a) => post.assetIds.includes(a.id))
+    const list = post.assetIds.map((id) => assets.find((a) => a.id === id)).filter(Boolean) as typeof assets
     for (const asset of list) {
       // Drive files: pull the full-quality original straight from Google Drive.
       if (asset.driveId) {
@@ -245,7 +245,7 @@ function DayCell({
       <div className="space-y-1.5">
         {posts.map((p) => {
           const pillar = pillars.find((x) => x.id === p.pillarId)
-          const asset = assets.find((a) => p.assetIds.includes(a.id))
+          const asset = assets.find((a) => a.id === p.assetIds[0])
           return <PostCard key={p.id} post={p} pillar={pillar} asset={asset} onOpen={() => onOpen(p.id)} onDuplicate={() => onDuplicate(p)} onDelete={() => onDelete(p.id)} onDownload={() => onDownload(p)} />
         })}
       </div>

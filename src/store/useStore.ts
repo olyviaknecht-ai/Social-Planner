@@ -423,10 +423,18 @@ export const useStore = create<State>()(
       ungroupCarousel: (carouselId) =>
         set((s) => ({ assets: s.assets.map((a) => (a.carouselId === carouselId ? { ...a, carouselId: undefined, carouselOrder: undefined } : a)) })),
 
-      // Set each asset's position within its carousel to match the given order.
+      // Set each asset's position within its carousel to match the given order,
+      // and reorder any scheduled post that uses these photos so the calendar matches.
       reorderCarousel: (orderedIds) => {
         const order = new Map(orderedIds.map((id, i) => [id, i]))
-        set((s) => ({ assets: s.assets.map((a) => (order.has(a.id) ? { ...a, carouselOrder: order.get(a.id) } : a)) }))
+        set((s) => ({
+          assets: s.assets.map((a) => (order.has(a.id) ? { ...a, carouselOrder: order.get(a.id) } : a)),
+          posts: s.posts.map((p) =>
+            p.assetIds.some((id) => order.has(id))
+              ? { ...p, assetIds: [...p.assetIds].sort((x, y) => (order.get(x) ?? 999) - (order.get(y) ?? 999)) }
+              : p,
+          ),
+        }))
       },
 
       // Remove the calendar post(s) that use this asset and send the freed photos back to the library.
