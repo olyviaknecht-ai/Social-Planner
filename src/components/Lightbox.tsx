@@ -4,17 +4,25 @@ import { loadBlobUrl } from '../store/blobs'
 import { drivePreview, driveView } from '../lib/drive'
 
 // Views one asset, or a whole carousel you can arrow-key through.
+// For images we can show the little thumbnail instantly then upgrade to full res.
+// For videos the thumbnail is a poster image, which must NOT be fed to <video>.
+function posterFor(a?: ContentAsset): string | undefined {
+  return a && !a.driveId && a.fileType !== 'video' ? a.thumbnailUrl : undefined
+}
+
 export default function Lightbox({ assets, startIndex = 0, onClose }: { assets: ContentAsset[]; startIndex?: number; onClose: () => void }) {
   const [cur, setCur] = useState(Math.min(startIndex, Math.max(assets.length - 1, 0)))
   const asset = assets[cur]
-  const [url, setUrl] = useState<string | undefined>(asset?.driveId ? undefined : asset?.thumbnailUrl)
+  const [url, setUrl] = useState<string | undefined>(posterFor(asset))
+  const [failed, setFailed] = useState(false)
   const many = assets.length > 1
 
   const go = (d: number) => setCur((c) => (c + d + assets.length) % assets.length)
 
   useEffect(() => {
     let live = true
-    setUrl(asset?.driveId ? undefined : asset?.thumbnailUrl)
+    setUrl(posterFor(asset))
+    setFailed(false)
     if (asset && !asset.driveId) loadBlobUrl(asset.id).then((u) => { if (live && u) setUrl(u) })
     return () => { live = false }
   }, [asset?.id])
@@ -59,8 +67,26 @@ export default function Lightbox({ assets, startIndex = 0, onClose }: { assets: 
       {asset.driveId ? (
         <iframe src={drivePreview(asset.driveId)} className="h-[74vh] w-[90vw] max-w-4xl rounded-lg bg-black" onClick={(e) => e.stopPropagation()} allow="autoplay" title={asset.title} />
       ) : isVideo ? (
-        url ? (
-          <video src={url} controls autoPlay className="max-h-[80vh] max-w-[86vw] rounded-lg" onClick={(e) => e.stopPropagation()} />
+        url && !failed ? (
+          <video
+            key={url}
+            src={url}
+            controls
+            autoPlay
+            playsInline
+            className="max-h-[80vh] max-w-[86vw] rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+            onError={() => setFailed(true)}
+          />
+        ) : failed ? (
+          <div className="flex max-w-md flex-col items-center gap-3 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="text-white/70">This video can’t play in the browser. That usually means the format (often iPhone .mov / HEVC).</div>
+            {url && (
+              <a href={url} download={`${(asset.title || 'video').replace(/[^\w.-]+/g, '_')}.mp4`} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-valmer-ink shadow hover:bg-valmer-sage hover:text-white">
+                ⬇ Download the video
+              </a>
+            )}
+          </div>
         ) : (
           <div className="text-white/60">Loading video…</div>
         )
