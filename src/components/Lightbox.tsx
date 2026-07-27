@@ -15,6 +15,7 @@ export default function Lightbox({ assets, startIndex = 0, onClose }: { assets: 
   const asset = assets[cur]
   const [url, setUrl] = useState<string | undefined>(posterFor(asset))
   const [failed, setFailed] = useState(false)
+  const [missing, setMissing] = useState(false) // the file isn't stored on this device
   const many = assets.length > 1
 
   const go = (d: number) => setCur((c) => (c + d + assets.length) % assets.length)
@@ -23,7 +24,14 @@ export default function Lightbox({ assets, startIndex = 0, onClose }: { assets: 
     let live = true
     setUrl(posterFor(asset))
     setFailed(false)
-    if (asset && !asset.driveId) loadBlobUrl(asset.id).then((u) => { if (live && u) setUrl(u) })
+    setMissing(false)
+    if (asset && !asset.driveId) {
+      loadBlobUrl(asset.id).then((u) => {
+        if (!live) return
+        if (u) setUrl(u)
+        else setMissing(true) // no blob in this browser (uploaded on another device / cleared)
+      })
+    }
     return () => { live = false }
   }, [asset?.id])
 
@@ -66,6 +74,12 @@ export default function Lightbox({ assets, startIndex = 0, onClose }: { assets: 
 
       {asset.driveId ? (
         <iframe src={drivePreview(asset.driveId)} className="h-[74vh] w-[90vw] max-w-4xl rounded-lg bg-black" onClick={(e) => e.stopPropagation()} allow="autoplay" title={asset.title} />
+      ) : missing ? (
+        <div className="flex max-w-md flex-col items-center gap-2 px-6 text-center" onClick={(e) => e.stopPropagation()}>
+          {asset.thumbnailUrl && <img src={asset.thumbnailUrl} alt={asset.title} className="mb-2 max-h-[40vh] rounded-lg opacity-70" />}
+          <div className="text-white/80">This {isVideo ? 'video' : 'file'} isn’t stored on this device.</div>
+          <div className="text-sm text-white/55">Files uploaded straight into the tool are saved only in the browser you uploaded them from. To see it on any device, add it to your connected Google Drive folder.</div>
+        </div>
       ) : isVideo ? (
         url && !failed ? (
           <video
