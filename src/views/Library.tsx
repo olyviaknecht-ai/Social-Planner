@@ -132,6 +132,7 @@ export default function Library() {
   const batchCarousel = () => { groupCarousel(ids); flash(`Grouped ${ids.length} photos into a carousel. Find it in the library, schedule it whenever.`); clear() }
   const scheduleCarousel = (memberIds: string[]) => { const id = createCarouselPost(memberIds); setOpenPost(id) }
   const unscheduleCarousel = (memberIds: string[]) => { unscheduleAsset(memberIds[0]); flash('Unscheduled — back in your library') }
+  const toggleCarouselUsed = (memberIds: string[], makeUsed: boolean) => { updateAssets(memberIds, { status: makeUsed ? 'posted' : 'unused' }); flash(makeUsed ? 'Carousel marked used' : 'Carousel marked unused') }
 
   return (
     <div className="p-6 pb-28">
@@ -235,12 +236,12 @@ export default function Library() {
                   </div>
                 )}
               </div>
-              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onOpenCarousel: setOpenCarousel }} />
+              <Grid assets={g.assets} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onToggleCarouselUsed: toggleCarouselUsed, onOpenCarousel: setOpenCarousel }} />
             </div>
           ))}
         </div>
       ) : (
-        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onOpenCarousel: setOpenCarousel }} />
+        <Grid assets={filtered} {...{ posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel: scheduleCarousel, onUnscheduleCarousel: unscheduleCarousel, onUngroupCarousel: ungroupCarousel, onToggleCarouselUsed: toggleCarouselUsed, onOpenCarousel: setOpenCarousel }} />
       )}
 
       {/* batch bar */}
@@ -277,6 +278,7 @@ export default function Library() {
           onSchedule={(orderedIds) => scheduleCarousel(orderedIds)}
           onUnschedule={(orderedIds) => unscheduleCarousel(orderedIds)}
           onUngroup={() => ungroupCarousel(openCarousel)}
+          onToggleUsed={(orderedIds, makeUsed) => toggleCarouselUsed(orderedIds, makeUsed)}
           onClose={() => setOpenCarousel(null)}
         />
       )}
@@ -288,7 +290,7 @@ export default function Library() {
   )
 }
 
-function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUnscheduleCarousel, onUngroupCarousel, onOpenCarousel }: any) {
+function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenAsset, onAction, onScheduleCarousel, onUnscheduleCarousel, onUngroupCarousel, onToggleCarouselUsed, onOpenCarousel }: any) {
   // Fold assets that share a carouselId into a single carousel card, keeping order.
   const items: ({ kind: 'single'; asset: ContentAsset } | { kind: 'carousel'; id: string; assets: ContentAsset[] })[] = []
   const groups = new Map<string, ContentAsset[]>()
@@ -313,6 +315,7 @@ function Grid({ assets, posts, pillars, campaignName, selected, toggle, setOpenA
             onSchedule={() => onScheduleCarousel(item.assets.map((a) => a.id))}
             onUnschedule={() => onUnscheduleCarousel(item.assets.map((a) => a.id))}
             onUngroup={() => onUngroupCarousel(item.id)}
+            onToggleUsed={(makeUsed: boolean) => onToggleCarouselUsed(item.assets.map((a) => a.id), makeUsed)}
             onOpen={() => onOpenCarousel(item.id)}
           />
         ) : (

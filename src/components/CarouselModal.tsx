@@ -15,12 +15,14 @@ export default function CarouselModal({
   onSchedule,
   onUnschedule,
   onUngroup,
+  onToggleUsed,
   onClose,
 }: {
   carouselId: string
   onSchedule: (orderedIds: string[]) => void
   onUnschedule: (orderedIds: string[]) => void
   onUngroup: () => void
+  onToggleUsed: (orderedIds: string[], makeUsed: boolean) => void
   onClose: () => void
 }) {
   const { assets, reorderCarousel, removeAsset } = useStore()
@@ -29,7 +31,8 @@ export default function CarouselModal({
     [assets, carouselId],
   )
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
-  const scheduled = members.some((a) => a.status === 'scheduled' || a.status === 'posted')
+  const used = members.length > 0 && members.every((a) => a.status === 'posted')
+  const scheduled = !used && members.some((a) => a.status === 'scheduled' || a.status === 'posted')
   const orderedIds = members.map((a) => a.id)
   const [view, setView] = useState<number | null>(null)
 
@@ -73,11 +76,13 @@ export default function CarouselModal({
           <p className="mt-3 text-[11px] text-valmer-slate/55">Tip: click the ⤢ on a photo to open it, then use ← and → to click through the carousel.</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {scheduled ? (
-              <button onClick={() => { onUnschedule(orderedIds); onClose() }} className="btn-outline">Unschedule</button>
-            ) : (
-              <button onClick={() => { onSchedule(orderedIds); onClose() }} className="btn-primary">Schedule this carousel</button>
-            )}
+            {!used &&
+              (scheduled ? (
+                <button onClick={() => { onUnschedule(orderedIds); onClose() }} className="btn-outline">Unschedule</button>
+              ) : (
+                <button onClick={() => { onSchedule(orderedIds); onClose() }} className="btn-primary">Schedule this carousel</button>
+              ))}
+            <button onClick={() => { onToggleUsed(orderedIds, !used); onClose() }} className="btn-outline">{used ? 'Mark unused' : 'Mark used'}</button>
             <button onClick={() => { onUngroup(); onClose() }} className="btn-outline">Ungroup</button>
             <button onClick={onClose} className="btn-ghost ml-auto">Done</button>
           </div>

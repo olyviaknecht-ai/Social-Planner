@@ -9,22 +9,29 @@ export default function CarouselCard({
   onSchedule,
   onUnschedule,
   onUngroup,
+  onToggleUsed,
   onOpen,
 }: {
   assets: ContentAsset[]
   onSchedule: () => void
   onUnschedule: () => void
   onUngroup: () => void
+  onToggleUsed: (makeUsed: boolean) => void
   onOpen: () => void
 }) {
   const cover = assets[0]
   const rest = assets.slice(1, 4)
-  const scheduled = assets.some((a) => a.status === 'scheduled' || a.status === 'posted')
+  const used = assets.length > 0 && assets.every((a) => a.status === 'posted')
+  const scheduled = !used && assets.some((a) => a.status === 'scheduled' || a.status === 'posted')
 
   return (
-    <div className="card relative flex flex-col overflow-hidden transition-shadow hover:shadow-md">
+    <div className={cls('card relative flex flex-col overflow-hidden transition-shadow hover:shadow-md', used && 'opacity-60')}>
       <span className="absolute left-2 top-2 z-10 chip bg-valmer-gold/20 text-[10px] text-valmer-gold">◫ Carousel · {assets.length}</span>
-      {scheduled && <span className="absolute right-2 top-2 z-10 chip bg-emerald-600 text-[10px] text-white">Scheduled</span>}
+      {used ? (
+        <span className="absolute right-2 top-2 z-10 chip bg-emerald-600 text-[10px] text-white">✓ Used</span>
+      ) : scheduled ? (
+        <span className="absolute right-2 top-2 z-10 chip bg-emerald-600 text-[10px] text-white">Scheduled</span>
+      ) : null}
 
       <div className="relative">
         <button onClick={onOpen} className="block w-full text-left" title="Open to reorder photos">
@@ -63,12 +70,16 @@ export default function CarouselCard({
         <button onClick={onOpen} className="truncate text-left text-sm font-medium text-valmer-ink hover:text-valmer-sage">{cover.title || 'Carousel'}</button>
         <button onClick={onOpen} className="text-left text-[11px] text-valmer-slate/60 hover:text-valmer-sage">{assets.length} photos · tap to reorder{scheduled ? '' : ' · not scheduled'}</button>
         {cover.driveId && <DriveLink driveId={cover.driveId} video={cover.fileType === 'video'} label={cover.fileType === 'video' ? 'Watch cover in Drive' : 'Open cover in Drive'} />}
-        <div className="mt-auto flex gap-2 pt-1">
-          {scheduled ? (
-            <button onClick={onUnschedule} className="btn-outline flex-1 py-1 text-xs" title="Remove from the calendar, keep it here">Unschedule</button>
-          ) : (
-            <button onClick={onSchedule} className="btn-primary flex-1 py-1 text-xs">Schedule</button>
-          )}
+        <div className="mt-auto flex flex-wrap gap-2 pt-1">
+          {!used &&
+            (scheduled ? (
+              <button onClick={onUnschedule} className="btn-outline flex-1 py-1 text-xs" title="Remove from the calendar, keep it here">Unschedule</button>
+            ) : (
+              <button onClick={onSchedule} className="btn-primary flex-1 py-1 text-xs">Schedule</button>
+            ))}
+          <button onClick={() => onToggleUsed(!used)} className="btn-outline py-1 text-xs" title={used ? 'Put it back in rotation' : 'Mark this carousel as already posted'}>
+            {used ? 'Mark unused' : 'Mark used'}
+          </button>
           <button onClick={onUngroup} className="btn-outline py-1 text-xs" title="Split back into separate photos">Ungroup</button>
         </div>
       </div>
